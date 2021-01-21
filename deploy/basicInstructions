@@ -1,0 +1,7 @@
+sudo docker run -it stagedata:latest bash
+
+# Remove an imaghe
+
+sudo docker image rm -f stagedata:latest
+
+
