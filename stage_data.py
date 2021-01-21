@@ -5,7 +5,8 @@ import logging
 
 filelist={'zeta_max':    'maxele.63.nc', 
           'swan_HS_max': 'swan_HS_max.63.nc',
-          'wind_max':    'maxwvel.63.nc'}
+          'wind_max':    'maxwvel.63.nc', 
+          'water_levels': 'fort.63.nc'}
 mode = 0o755
 
 def getDataFile(outdir, url, infilename):
