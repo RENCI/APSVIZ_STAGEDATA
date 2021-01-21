@@ -32,10 +32,11 @@ WORKDIR /repo
 RUN git clone https://github.com/RENCI/APSVIZ_STAGEDATA.git
                
 # move to the install directory
-WORKDIR ADCIRCSupportTools/INSTALL
+WORKDIR APSVIZ_STAGEDATA/INSTALL
 
 # install the pip requirements
-RUN pip install -r requirements.txt
+#RUN pip install -r requirements.txt
+RUN conda install --yes --file requirements.txt
 
 # change to the pipelines directory                        
 WORKDIR /repo/APSVIZ_STAGEDATA
