@@ -4,4 +4,5 @@ sudo docker run -it stagedata:latest bash
 
 sudo docker image rm -f stagedata:latest
 
+# Need to login into docker to push
 
