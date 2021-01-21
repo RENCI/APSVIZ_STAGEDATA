@@ -1,6 +1,0 @@
-python stage_data.py --inputURL=<url> --outputDir=<CommonBaseDir/RunName>
-
-e.g.
-
-python stage_data.py --inputURL http://tds.renci.org:8080/thredds/fileServer/2021/nam/2021010500/hsofs/hatteras.renci.org/hsofs-nam-bob-2021/namforecast  --outputDir=./input
-
