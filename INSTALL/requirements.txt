@@ -1,2 +1,0 @@
-backports.os==0.1.1
-wget==3.2
