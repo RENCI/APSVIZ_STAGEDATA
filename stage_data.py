@@ -22,7 +22,7 @@ def main(args):
     logging.basicConfig(filename='log',format='%(asctime)s : %(levelname)s : %(funcName)s : %(module)s : %(name)s : %(message)s', level=logging.DEBUG)
     # process args
     if not args.inputURL:
-        print(f"Need url on command line: --url <url>.")
+        print(f"Need inputURL on command line: --inputURL <url>.")
         return 1
     inputURL = args.inputURL.strip()
 
