@@ -6,23 +6,11 @@
 #       docker tag stagedata:latest renciorg/stagedata:latest
 #       docker push renciorg/stagedata:latest
 ##############
-FROM continuumio/miniconda3
+
+FROM python:3.8.5
 
 # get some credit
 LABEL maintainer="jtilson@renci.org"
-
-# make sure the container is up-to-date
-RUN apt-get update
-
-# Start off getting Python 3.7.3
-RUN conda install  -y python=3.7.3
-
-# update conda and set the download channel
-RUN conda update conda && \
-    conda config --add channels conda-forge
-
-# tell conda what the shell is
-RUN conda init bash
 
 # make a directory for the repos and go there
 RUN mkdir /repo
@@ -32,21 +20,10 @@ WORKDIR /repo
 RUN git clone https://github.com/RENCI/APSVIZ_STAGEDATA.git
                
 # move to the install directory
-WORKDIR APSVIZ_STAGEDATA/INSTALL
+WORKDIR APSVIZ_STAGEDATA
 
 # install the pip requirements
-#RUN pip install -r requirements.txt
-RUN conda install --yes --file requirements.txt
-
-# change to the pipelines directory                        
-WORKDIR /repo/APSVIZ_STAGEDATA
-                                   
-# make a temporary directory for the output.
-# this should eventually point a common PV
-RUN mkdir temp
-
-# set the location of the output directory
-ENV RUNTIMEDIR=/data
+RUN pip install -r requirements.txt
 
 ##########
 # at this point the container is ready to accept the launch command.
