@@ -2,24 +2,26 @@
 sudo docker image rm -f stagedata:latest
 sudo docker image rm -f renciorg/stagedata:latest
 
-
 sudo docker build -t stagedata:latest .
 sudo docker tag stagedata:latest renciorg/stagedata:latest
-
 sudo docker push renciorg/stagedata:latest
+# Need to login into docker to push
 
-# Docker file for the creation of the stagedata script
-# #
-# # to create image: docker build -t stagedata:latest .
-# # to push image:
-# #       docker tag stagedata:latest renciorg/stagedata:latest
-# #       docker push renciorg/stagedata:latest
-#
+# Start upo an interactive session
 sudo docker run -it stagedata:latest bash
 
-# Remove an imaghe
+####################
 
-sudo docker image rm -f stagedata:latest
+sudo docker image rm -f finalizedata:latest
+sudo docker image rm -f renciorg/finalizedata:latest
 
+sudo docker build -f Dockerfile.finalize -t finalizedata:latest .
+sudo docker tag finalizedata:latest renciorg/finalizedata:latest
+sudo docker push renciorg/finalizedata:latest
 # Need to login into docker to push
+
+# Start upo an interactive session
+sudo docker run -it finalizedata:latest bash
+
+
 
