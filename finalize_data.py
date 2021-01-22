@@ -27,7 +27,7 @@ def main(args):
 
     For now, the outputDir must be a local file system.
     '''
-    logging.basicConfig(filename='log',format='%(asctime)s : %(levelname)s : %(funcName)s : %(module)s : %(name)s : %(message)s', level=logging.DEBUG)
+    logging.basicConfig(filename='log',format='%(asctime)s : %(levelname)s : %(funcName)s : %(module)s : %(name)s : %(message)s', level=logging.WARNING)
 
     # process args
     if not args.inputDir:
@@ -36,7 +36,7 @@ def main(args):
     inputDir = args.inputDir.strip()
 
     if not args.outputDir:
-        print(f"Need output directory on command line: --output <outputdir>.")
+        logging.error("Need output directory on command line: --output <outputdir>.")
         return 1
 
     if not os.path.exists(args.inputDir):
@@ -73,7 +73,6 @@ def main(args):
 if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser(description=main.__doc__)
-    parser.add_argument('--verbose', help="Turn on debug statements", action='store_true')
     parser.add_argument('--inputDir', default=None, help='inputDir to retrieve data from', type=str)
     parser.add_argument('--outputDir', default=None, help='Destination directory', type=str)
     parser.add_argument('--tarMeta', default='test', help='Tar file metadata (metadata_archive.gz)', type=str)
