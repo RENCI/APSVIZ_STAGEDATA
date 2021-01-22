@@ -11,17 +11,3 @@ sudo docker push renciorg/stagedata:latest
 sudo docker run -it stagedata:latest bash
 
 ####################
-
-sudo docker image rm -f finalizedata:latest
-sudo docker image rm -f renciorg/finalizedata:latest
-
-sudo docker build -f Dockerfile.finalize -t finalizedata:latest .
-sudo docker tag finalizedata:latest renciorg/finalizedata:latest
-sudo docker push renciorg/finalizedata:latest
-# Need to login into docker to push
-
-# Start upo an interactive session
-sudo docker run -it finalizedata:latest bash
-
-
-
