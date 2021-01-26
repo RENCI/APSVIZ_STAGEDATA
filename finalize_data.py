@@ -5,6 +5,7 @@ import os, sys, wget
 import tarfile
 import shutil
 import logging
+#import kubernetes as kb
 
 mode = 0o755
 
@@ -50,6 +51,9 @@ def main(args):
     logging.info('Input URL is {}'.format(inputDir))
     logging.info('OutputDir is {}'.format(args.outputDir))
 
+    #if args.externalDir not None:
+    #    utilities.log.info('An external dir was specified. Checking status is the job of the caller {}'.args.externalDir)
+
     # Construct local tarball
     logging.info('Try to construct a tarfile archive at {}'.format(inputDir))
     tarname = '_'.join([args.tarMeta,'archive.tar.gz'])
@@ -62,11 +66,17 @@ def main(args):
     shutil.move(tarname, output_tarname)
     logging.info('Tar foile moved to distination name {}'.format(output_tarname))
 
-    # Lastly unpack the tar ball  in the destination dir
+    # (optionally) unpack the tar ball  in the destination dir
     out_tar = tarfile.open(output_tarname)
     out_tar.extractall(args.outputDir) # specify which folder to extract to
     out_tar.close()
     logging.info('Unpacked destination tar file into {}'.format(args.outputDir))
+
+    # Pass the tarfile back to the caller at the indicated location
+    #if args.externalDir not None
+    #    utilities.log.info('Send tarfile back to the caller at {}'.args.externalDir)
+    #    utilities.log.info('This is prototype code and needs to be replaced with infrastructure code')
+
 
     logging.info('finalize_data is finished')
 
@@ -75,6 +85,7 @@ if __name__ == '__main__':
     parser = ArgumentParser(description=main.__doc__)
     parser.add_argument('--inputDir', default=None, help='inputDir to retrieve data from', type=str)
     parser.add_argument('--outputDir', default=None, help='Destination directory', type=str)
+    #parser.add_argument('--externalDir', default=None, help='External to Kubernetes destination directory', type=str)
     parser.add_argument('--tarMeta', default='test', help='Tar file metadata (metadata_archive.gz)', type=str)
     
     args = parser.parse_args()
