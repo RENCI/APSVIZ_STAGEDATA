@@ -1,2 +1,6 @@
 backports.os==0.1.1
 wget==3.2
+GDAL>=2.2.4
+geoserver-rest==1.2.5
+geoserver-restconfig==2.0.4.8
+psycopg2==2.8.6
