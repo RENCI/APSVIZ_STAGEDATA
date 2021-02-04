@@ -60,23 +60,23 @@ def main(args):
     num_files = make_tarfile(tarname, args.inputDir)
     logging.info('Number of files archived to tar is {}'.format(num_files))
 
-    # Move tar to archive ( expand ?)
-    # For the real kubernetes job this will be an explicit onm-the-wire transfer
-    output_tarname='/'.join([args.outputDir,tarname])
-    shutil.move(tarname, output_tarname)
-    logging.info('Tar foile moved to distination name {}'.format(output_tarname))
+    if args.outputDir is not None:
+        output_tarname='/'.join([args.outputDir,tarname])
+        shutil.move(tarname, output_tarname)
+        logging.info('Tar file moved to distination name {}'.format(output_tarname))
+        # (optionally) unpack the tar ball  in the destination dir
+        out_tar = tarfile.open(output_tarname)
+        out_tar.extractall(args.outputDir) # specify which folder to extract to
+        out_tar.close()
+        logging.info('Unpacked destination tar file into {}'.format(args.outputDir))
 
-    # (optionally) unpack the tar ball  in the destination dir
-    out_tar = tarfile.open(output_tarname)
-    out_tar.extractall(args.outputDir) # specify which folder to extract to
-    out_tar.close()
-    logging.info('Unpacked destination tar file into {}'.format(args.outputDir))
+    if args.externalDir is not None:
+        # Pass the tarfile back to the caller at the indicated location
+        utilities.log.info('Send tarfile back to the caller at {}'.args.externalDir)
+        #os.system(scp output_tarname host://args.externalDir) seems to be the best way
+        utilities.log.info('Tar file sent')
 
-    # Pass the tarfile back to the caller at the indicated location
-    #if args.externalDir not None
-    #    utilities.log.info('Send tarfile back to the caller at {}'.args.externalDir)
-    #    utilities.log.info('This is prototype code and needs to be replaced with infrastructure code')
-
+# Still need a password for this top work
 
     logging.info('finalize_data is finished')
 
@@ -85,7 +85,7 @@ if __name__ == '__main__':
     parser = ArgumentParser(description=main.__doc__)
     parser.add_argument('--inputDir', default=None, help='inputDir to retrieve data from', type=str)
     parser.add_argument('--outputDir', default=None, help='Destination directory', type=str)
-    #parser.add_argument('--externalDir', default=None, help='External to Kubernetes destination directory', type=str)
+    parser.add_argument('--externalDir', default=None, help='External to RENCI destination directory syntax: host://dir', type=str)
     parser.add_argument('--tarMeta', default='test', help='Tar file metadata (metadata_archive.gz)', type=str)
     
     args = parser.parse_args()
