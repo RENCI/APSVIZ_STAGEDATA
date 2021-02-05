@@ -73,7 +73,9 @@ def main(args):
     if args.externalDir is not None:
         # Pass the tarfile back to the caller at the indicated location
         utilities.log.info('Send tarfile back to the caller at {}'.args.externalDir)
-        #os.system(scp output_tarname host://args.externalDir) seems to be the best way
+        bldcmd = 'scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no '+args.externalDir
+        utilities.log.info('Execute cmd: {}'.format(bldcmd))
+        os.system(bldcmd) seems to be the best way
         utilities.log.info('Tar file sent')
 
 # Still need a password for this top work
@@ -85,7 +87,7 @@ if __name__ == '__main__':
     parser = ArgumentParser(description=main.__doc__)
     parser.add_argument('--inputDir', default=None, help='inputDir to retrieve data from', type=str)
     parser.add_argument('--outputDir', default=None, help='Destination directory', type=str)
-    parser.add_argument('--externalDir', default=None, help='External to RENCI destination directory syntax: host://dir', type=str)
+    parser.add_argument('--externalDir', default=None, help='External to RENCI destination directory syntax: user@host://dir', type=str)
     parser.add_argument('--tarMeta', default='test', help='Tar file metadata (metadata_archive.gz)', type=str)
     
     args = parser.parse_args()
