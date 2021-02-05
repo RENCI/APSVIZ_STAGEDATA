@@ -75,7 +75,7 @@ def main(args):
         utilities.log.info('Send tarfile back to the caller at {}'.args.externalDir)
         bldcmd = 'scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no '+args.externalDir
         utilities.log.info('Execute cmd: {}'.format(bldcmd))
-        os.system(bldcmd) seems to be the best way
+        os.system(bldcmd) 
         utilities.log.info('Tar file sent')
 
 # Still need a password for this top work
