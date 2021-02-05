@@ -18,12 +18,12 @@ WORKDIR /repo
 
 # get the repos
 RUN git clone https://github.com/RENCI/APSVIZ_STAGEDATA.git
-               
+
 # move to the install directory
 WORKDIR /repo/APSVIZ_STAGEDATA
 
 # install the pip requirements
-RUN pip install -r requirements.txt
+RUN pip install -r requirements_minimal.txt
 
 ##########
 # at this point the container is ready to accept the launch command.
