@@ -7,7 +7,7 @@
 #       docker push renciorg/stagedata:latest
 ##############
 
-FROM python:3.8.5
+FROM thinkwhere/gdal-python
 
 # get some credit
 LABEL maintainer="jtilson@renci.org"
