@@ -1,5 +1,4 @@
 wget
-shutil
 GDAL>=2.2.4
 geoserver-rest==1.2.5
 geoserver-restconfig==2.0.4.8
