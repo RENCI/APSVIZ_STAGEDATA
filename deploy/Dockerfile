@@ -23,7 +23,7 @@ RUN git clone https://github.com/RENCI/APSVIZ_STAGEDATA.git
 WORKDIR /repo/APSVIZ_STAGEDATA
 
 # install the pip requirements
-RUN pip install -r requirements_minimal.txt
+RUN pip install -r requirements.txt
 
 ##########
 # at this point the container is ready to accept the launch command.

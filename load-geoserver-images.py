@@ -73,9 +73,11 @@ def main(args):
 
     user = os.getenv('GEOSERVER_USER', 'user')
     pswd = os.environ.get('GEOSERVER_PASSWORD', 'password')
-    url = os.environ.get('GEOSERVER_URL', 'https://172.25.17.64/geoserver/')
+    #url = os.environ.get('GEOSERVER_URL', 'https://172.25.17.64/geoserver/')
+    url = os.environ.get('GEOSERVER_URL', 'https://apsviz-geoserver.renci.org/geoserver/')
     worksp = os.environ.get('GEOSERVER_WORKSPACE', 'ADCIRC_2021')
 
+    logging.info("Connecting to GeoServer at host: {0}".format(str(url)))
     # create a GeoServer connection
     geo = Geoserver(url, username=user, password=pswd)
 
@@ -84,13 +86,14 @@ def main(args):
         geo.create_workspace(workspace=worksp)
 
     # /projects/ees/APSViz final dir path needs to be well defined
-    final_path = "/projects/ees/APSViz/final/" + instance_id
+    #final_path = "/projects/ees/APSViz/final/" + instance_id
+    final_path = "/projects/ees/APSViz/stageDIR"
     mbtiles_path = final_path + "/mbtiles"
 
     # format of mbtiles is ex: maxele.63.0.9.mbtiles
     # pull out meaningful pieces of file name
     # get all files in mbtiles dir and loop through
-    for file in fnmatch.filter(os.listdir(inputDir), '*.mbtiles'):
+    for file in fnmatch.filter(os.listdir(mbtiles_path), '*.mbtiles'):
         file_path = mbtiles_path + "/" + file
         layer_name = instance_id + "_" + file 
         logging.info('Adding layer: {} into workspace: {}'.format(layer_name, worksp))
@@ -101,7 +104,7 @@ def main(args):
 
         # update DB with url of layer for access from website NEED INSTANCE ID for this
         layer_url = '{0}/rest/workspaces/{1}/coveragestores/{2}.json'.format(url, worksp, layer_name)
-        asgsDB_update(instance_id, file, layer_url)
+        # asgsDB_update(instance_id, file, layer_url)
 
 
 if __name__ == '__main__':
