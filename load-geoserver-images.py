@@ -73,7 +73,6 @@ def main(args):
 
     user = os.getenv('GEOSERVER_USER', 'user')
     pswd = os.environ.get('GEOSERVER_PASSWORD', 'password')
-    #url = os.environ.get('GEOSERVER_URL', 'https://172.25.17.64/geoserver/')
     url = os.environ.get('GEOSERVER_URL', 'https://apsviz-geoserver.renci.org/geoserver/')
     worksp = os.environ.get('GEOSERVER_WORKSPACE', 'ADCIRC_2021')
 
