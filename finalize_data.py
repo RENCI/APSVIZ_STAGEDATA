@@ -5,7 +5,6 @@ import os, sys, wget
 import tarfile
 import shutil
 import logging
-#import kubernetes as kb
 
 mode = 0o755
 
@@ -71,12 +70,12 @@ def main(args):
         logging.info('Unpacked destination tar file into {}'.format(args.outputDir))
 
     if args.externalDir is not None:
-        # Pass the tarfile back to the caller at the indicated location
+        # We want to pass back the full directory hierarchy instead of the tar file back to the caller at the indicated location
         utilities.log.info('Send tarfile back to the caller at {}'.args.externalDir)
-        bldcmd = 'scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no '+args.externalDir
+        bldcmd = 'scp -r -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no '+args.inputDir+' '+args.externalDir
         utilities.log.info('Execute cmd: {}'.format(bldcmd))
         os.system(bldcmd) 
-        utilities.log.info('Tar file sent')
+        utilities.log.info('Hierarchy of file sent back')
 
 # Still need a password for this top work
 
