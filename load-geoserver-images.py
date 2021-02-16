@@ -10,11 +10,11 @@ def asgsDB_connect():
     conn = None
     cursor = None
 
-    user = os.getenv('DB_USER', 'user')
-    pswd = os.getenv('DB_PSWD', 'password')
-    host = os.getenv('DB_HOST', '172.25.16.10')
-    port = os.getenv('DB_PORT', '5432')
-    db_name = os.getenv('DB_NAME', 'asgs_dashboard')
+    user = os.getenv('ASGS_DB_USERNAME', 'user')
+    pswd = os.getenv('ASGS_DB_PASSWORD', 'password')
+    host = os.getenv('ASGS_DB_HOST', '172.25.16.10')
+    port = os.getenv('ASGS_DB_PORT', '5432')
+    db_name = os.getenv('ASGS_DB_DATABASE', 'asgs_dashboard')
 
     try:
         conn_str = 'host={0} port={1} dbname={2} user={3} password={4}'.format(host, port, db_name, user, pswd)
