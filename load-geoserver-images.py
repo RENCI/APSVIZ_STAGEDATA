@@ -89,10 +89,27 @@ def main(args):
     final_path = "/projects/ees/APSViz/stageDIR"
     mbtiles_path = final_path + "/mbtiles"
 
+    # temporary file set to test with
+    tile_set = {
+        "maxele.63.0.9.mbtiles",
+        "maxwvel.63.0.9.mbtiles",
+        "swan_HS_max.63.0.9.mbtiles",
+        "maxele.63.10.10.mbtiles",
+        "maxwvel.63.10.10.mbtiles",
+        "swan_HS_max.63.10.10.mbtiles",
+        "maxele.63.1.11.mbtiles",
+        "maxwvel.63.11.11.mbtiles",
+        "swan_HS_max.63.11.11.mbtiles",
+        "maxele.63.12.12.mbtiles",
+        "maxwvel.63.12.12.mbtiles",
+        "swan_HS_max.63.12.12.mbtiles"
+    }
+
     # format of mbtiles is ex: maxele.63.0.9.mbtiles
     # pull out meaningful pieces of file name
     # get all files in mbtiles dir and loop through
-    for file in fnmatch.filter(os.listdir(mbtiles_path), '*.mbtiles'):
+    # for file in fnmatch.filter(os.listdir(mbtiles_path), '*.mbtiles'):
+    for file in tile_set:
         file_path = mbtiles_path + "/" + file
         layer_name = instance_id + "_" + file 
         logging.info('Adding layer: {} into workspace: {}'.format(layer_name, worksp))
@@ -103,7 +120,7 @@ def main(args):
 
         # update DB with url of layer for access from website NEED INSTANCE ID for this
         layer_url = '{0}/rest/workspaces/{1}/coveragestores/{2}.json'.format(url, worksp, layer_name)
-        # asgsDB_update(instance_id, file, layer_url)
+        #asgsDB_update(instance_id, file, layer_url)
 
 
 if __name__ == '__main__':
