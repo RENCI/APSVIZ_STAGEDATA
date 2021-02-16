@@ -120,7 +120,7 @@ def main(args):
 
         # update DB with url of layer for access from website NEED INSTANCE ID for this
         layer_url = '{0}/rest/workspaces/{1}/coveragestores/{2}.json'.format(url, worksp, layer_name)
-        #asgsDB_update(instance_id, file, layer_url)
+        asgsDB_update(instance_id, file, layer_url)
 
 
 if __name__ == '__main__':
