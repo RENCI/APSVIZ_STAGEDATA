@@ -14,7 +14,7 @@ def asgsDB_connect():
     pswd = os.getenv('ASGS_DB_PASSWORD', 'password')
     host = os.getenv('ASGS_DB_HOST', '172.25.16.10')
     port = os.getenv('ASGS_DB_PORT', '5432')
-    db_name = os.getenv('ASGS_DB_DATABASE', 'asgs_dashboard')
+    db_name = os.getenv('ASGS_DB_DATABASE', 'asgs')
 
     try:
         conn_str = 'host={0} port={1} dbname={2} user={3} password={4}'.format(host, port, db_name, user, pswd)
@@ -23,14 +23,14 @@ def asgsDB_connect():
         conn.set_session(autocommit=True)
     except:
         e = sys.exc_info()[0]
-        logging.error("FAILURE - Cannot update ASGS_DB. error {0}".format(str(e)))
+        logging.error("FAILURE - Cannot connect to ASGS_DB. error {0}".format(str(e)))
     finally:
         return conn
 
 
 def asgsDB_close(conn):
 
-    if (conn.cursor):
+    if (conn and conn.cursor):
         conn.cursor.close()
     if (conn):
         conn.close()
@@ -49,7 +49,8 @@ def asgsDB_update(instanceId, name, url):
         cursor = conn.cursor()
 
         sql_stmt = 'INSERT INTO "ASGS_Mon_config_item" (key, value, instance_id) VALUES(%s, %s, %s)'
-        params = [key_name, key_value, instanceId]
+        params = [f"'{key_name}'", f"'{key_value}'", instanceId]
+        logging.debug(f"sql statement is: {sql_stmt} params are: {params}")
 
         cursor.execute(sql_stmt, params)
     except:
@@ -63,7 +64,7 @@ def asgsDB_update(instanceId, name, url):
 # then update the specified DB with the access urls (configured with env vars)
 
 def main(args):
-    logging.basicConfig(filename='stage-data-load-images.log',format='%(asctime)s : %(levelname)s : %(funcName)s : %(module)s : %(name)s : %(message)s', level=logging.WARNING)
+    logging.basicConfig(filename='stage-data-load-images.log',format='%(asctime)s : %(levelname)s : %(funcName)s : %(module)s : %(name)s : %(message)s', level=logging.DEBUG)
 
     # process args
     if not args.instanceId:
