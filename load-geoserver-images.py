@@ -85,34 +85,33 @@ def main(args):
     if (geo.get_workspace(worksp) is None):
         geo.create_workspace(workspace=worksp)
 
-    # /projects/ees/APSViz final dir path needs to be well defined
-    #final_path = "/projects/ees/APSViz/final/" + instance_id
-    final_path = "/projects/ees/APSViz/stageDIR"
+    # final dir path needs to be well defined
+    # dir structure looks like this: /data/<instance id>/mbtiles/<parameter name>.<zoom level>.mbtiles
+    final_path = "/data/" + instance_id
     mbtiles_path = final_path + "/mbtiles"
 
     # temporary file set to test with
-    tile_set = {
-        "maxele.63.0.9",
-        "maxwvel.63.0.9",
-        "swan_HS_max.63.0.9",
-        "maxele.63.10.10",
-        "maxwvel.63.10.10",
-        "swan_HS_max.63.10.10",
-        "maxele.63.1.11",
-        "maxwvel.63.11.11",
-        "swan_HS_max.63.11.11",
-        "maxele.63.12.12",
-        "maxwvel.63.12.12",
-        "swan_HS_max.63.12.12"
-    }
+    #tile_set = {
+        #"maxele.63.0.9",
+        #"maxwvel.63.0.9",
+        #"swan_HS_max.63.0.9",
+        #"maxele.63.10.10",
+        #"maxwvel.63.10.10",
+        #"swan_HS_max.63.10.10",
+        #"maxele.63.1.11",
+        #"maxwvel.63.11.11",
+        #"swan_HS_max.63.11.11",
+        #"maxele.63.12.12",
+        #"maxwvel.63.12.12",
+        #"swan_HS_max.63.12.12"
+    #}
 
     # format of mbtiles is ex: maxele.63.0.9.mbtiles
     # pull out meaningful pieces of file name
     # get all files in mbtiles dir and loop through
-    # for file in fnmatch.filter(os.listdir(mbtiles_path), '*.mbtiles'):
-    for file in tile_set:
-        file_path = f"{mbtiles_path}/{file}.mbtiles"
-        layer_name = f"{instance_id}_{file}"
+    for file in fnmatch.filter(os.listdir(mbtiles_path), '*.mbtiles'):
+        file_path = f"{mbtiles_path}/{file}"
+        layer_name = str(instance_id) + "_" + os.path.splitext(file)[0]
         logging.info(f'Adding layer: {layer_name} into workspace: {worksp}')
 
         # create datastore and associate with .mbtiles file
@@ -120,7 +119,7 @@ def main(args):
         logging.debug(f"Attempted to add coverage store, file path: {file_path}  return value: {ret}")
 
         # update DB with url of layer for access from website NEED INSTANCE ID for this
-        layer_url = f'{url}/rest/workspaces/{worksp}/coveragestores/{layer_name}.json'
+        layer_url = f'{url}rest/workspaces/{worksp}/coveragestores/{layer_name}.json'
         asgsDB_update(instance_id, file, layer_url)
 
 
