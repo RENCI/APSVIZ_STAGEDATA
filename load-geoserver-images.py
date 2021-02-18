@@ -10,11 +10,11 @@ def asgsDB_connect():
     conn = None
     cursor = None
 
-    user = os.getenv('ASGS_DB_USERNAME', 'user')
-    pswd = os.getenv('ASGS_DB_PASSWORD', 'password')
-    host = os.getenv('ASGS_DB_HOST', '172.25.16.10')
-    port = os.getenv('ASGS_DB_PORT', '5432')
-    db_name = os.getenv('ASGS_DB_DATABASE', 'asgs')
+    user = os.getenv('ASGS_DB_USERNAME', 'user').strip()
+    pswd = os.getenv('ASGS_DB_PASSWORD', 'password').strip()
+    host = os.getenv('ASGS_DB_HOST', '172.25.16.10').strip()
+    port = os.getenv('ASGS_DB_PORT', '5432').strip()
+    db_name = os.getenv('ASGS_DB_DATABASE', 'asgs').strip()
 
     try:
         conn_str = f'host={host} port={port} dbname={db_name} user={user} password={pswd}'
@@ -72,10 +72,10 @@ def main(args):
         return 1
     instance_id = args.instanceId.strip()
 
-    user = os.getenv('GEOSERVER_USER', 'user')
-    pswd = os.environ.get('GEOSERVER_PASSWORD', 'password')
-    url = os.environ.get('GEOSERVER_URL', 'url')
-    worksp = os.environ.get('GEOSERVER_WORKSPACE', 'ADCIRC_2021')
+    user = os.getenv('GEOSERVER_USER', 'user').strip()
+    pswd = os.environ.get('GEOSERVER_PASSWORD', 'password').strip()
+    url = os.environ.get('GEOSERVER_URL', 'url').strip()
+    worksp = os.environ.get('GEOSERVER_WORKSPACE', 'ADCIRC_2021').strip()
 
     logging.info(f"Connecting to GeoServer at host: {url}")
     # create a GeoServer connection
