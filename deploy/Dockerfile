@@ -12,9 +12,6 @@ FROM thinkwhere/gdal-python
 # get some credit
 LABEL maintainer="jtilson@renci.org"
 
-# add vim for debugging
-RUN apt-get install -yq vim
-
 # make a directory for the repos and go there
 RUN mkdir /repo
 WORKDIR /repo
