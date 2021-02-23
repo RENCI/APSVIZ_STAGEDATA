@@ -30,8 +30,6 @@ def asgsDB_connect():
 
 def asgsDB_close(conn):
 
-    if (conn and conn.cursor):
-        conn.cursor.close()
     if (conn):
         conn.close()
 
