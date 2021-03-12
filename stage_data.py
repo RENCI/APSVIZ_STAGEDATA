@@ -13,9 +13,11 @@ def getDataFile(outdir, url, infilename):
     '''
     '''
     # Get infilename and download netcdf file
-    outfilename = wget.download(os.path.join(url,infilename), os.path.join(outdir,infilename))
-    return outfilename
-
+    try:
+        outfilename = wget.download(os.path.join(url,infilename), os.path.join(outdir,infilename))
+        return outfilename
+    except: HTTPError as e:
+        logging.error(e)
 
 def main(args):
     '''    
