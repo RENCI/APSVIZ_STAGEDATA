@@ -18,6 +18,7 @@ def getDataFile(outdir, url, infilename):
         return outfilename
     except: HTTPError as e:
         logging.error(e)
+        return None
 
 def main(args):
     '''    
