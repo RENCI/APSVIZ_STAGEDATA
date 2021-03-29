@@ -2,7 +2,6 @@
 
 import os, sys, wget
 import logging
-
 from urllib.error import HTTPError
 from common.logging import LoggingUtil
 
