@@ -2,67 +2,159 @@ import os, sys
 import fnmatch
 import logging
 import psycopg2
+import urllib.parse
+
 from geo.Geoserver import Geoserver
 from geoserver.catalog import Catalog
+from common.logging import LoggingUtil
+from subprocess import call
+
+class asgsDB:
+
+    def __init__(self, logger):
+        self.conn = None
+        self.logger = logger
+
+        user = os.getenv('ASGS_DB_USERNAME', 'user').strip()
+        pswd = os.getenv('ASGS_DB_PASSWORD', 'password').strip()
+        host = os.getenv('ASGS_DB_HOST', 'host').strip()
+        port = os.getenv('ASGS_DB_PORT', '5432').strip()
+        db_name = os.getenv('ASGS_DB_DATABASE', 'asgs').strip()
+
+        try:
+            # connect to asgs database
+            conn_str = f'host={host} port={port} dbname={db_name} user={user} password={pswd}'
+            logger.debug("Connecting to ASGS DB - coonection string={conn_str}")
+
+            self.conn = psycopg2.connect(conn_str)
+            self.conn.set_session(autocommit=True)
+        except:
+            e = sys.exc_info()[0]
+            self.logger.error(f"FAILURE - Cannot connect to ASGS_DB. error {e}")
+
+    def __del__(self):
+        if (self.conn):
+            self.conn.close()
+
+    # given instance id - save geoserver url (to access this mbtiles layer) in the asgs database
+    def saveImageURL(self, instanceId, name, url):
+        self.logger.info(f'Updating DB record - instance id: {instanceId} with url: {url}')
+
+        # format of mbtiles is ex: maxele.63.0.9.mbtiles
+        # final key value will be in this format image.maxele.63.0.9
+        key_name = "image." + os.path.splitext(name)[0]
+        key_value = url
+
+        try:
+            cursor = self.conn.cursor()
+
+            sql_stmt = 'INSERT INTO "ASGS_Mon_config_item" (key, value, instance_id) VALUES(%s, %s, %s)'
+            params = [f"'{key_name}'", f"'{key_value}'", instanceId]
+            self.logger.debug(f"sql statement is: {sql_stmt} params are: {params}")
+
+            cursor.execute(sql_stmt, params)
+        except:
+             e = sys.exc_info()[0]
+             self.logger.error(f"FAILURE - Cannot update ASGS_DB. error {e}")
+
+    def getRunMetadata(self, instanceId):
+        self.logger.debug(f'Retrieving DB record metadata - instance id: {instanceId}')
+
+        try:
+            cursor = self.conn.cursor()
+
+            sql_stmt = 'SELECT key FROM "ASGS_Mon_config_item" key, value, instance_id WHERE instance_id=%s'
+            params = [f"'{key_name}'", f"'{key_value}'", instanceId]
+            self.logger.debug(f"sql statement is: {sql_stmt} params are: {params}")
+
+            cursor.execute(sql_stmt, params)
+        except:
+             e = sys.exc_info()[0]
+             self.logger.error(f"FAILURE - Cannot update ASGS_DB. error {e}")
 
 
-def asgsDB_connect():
-    conn = None
-    cursor = None
 
-    user = os.getenv('ASGS_DB_USERNAME', 'user').strip()
-    pswd = os.getenv('ASGS_DB_PASSWORD', 'password').strip()
-    host = os.getenv('ASGS_DB_HOST', '172.25.16.10').strip()
-    port = os.getenv('ASGS_DB_PORT', '5432').strip()
-    db_name = os.getenv('ASGS_DB_DATABASE', 'asgs').strip()
-
-    try:
-        conn_str = f'host={host} port={port} dbname={db_name} user={user} password={pswd}'
-
-        conn = psycopg2.connect(conn_str)
-        conn.set_session(autocommit=True)
-    except:
-        e = sys.exc_info()[0]
-        logging.error(f"FAILURE - Cannot connect to ASGS_DB. error {e}")
-    finally:
-        return conn
+ # create a new workspace in geoserver if it does not already exist
+def add_workspace(logger, geo, worksp):
+    if (geo.get_workspace(worksp) is None):
+        geo.create_workspace(workspace=worksp)
 
 
-def asgsDB_close(conn):
-
-    if (conn):
-        conn.close()
-
-# Add the geoserver url for this image to the DB
-def asgsDB_update(instanceId, name, url):
-    logging.info(f'Updating DB record - instance id: {instanceId} with url: {url}')
-    conn = asgsDB_connect()
-
+# add a coverage store to geoserver for each .mbtiles found in the staging dir
+def add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_path):
     # format of mbtiles is ex: maxele.63.0.9.mbtiles
-    # final key value will be in this format image.maxele.63.0.9
-    key_name = "image." + os.path.splitext(name)[0]
-    key_value = url
+    # pull out meaningful pieces of file name
+    # get all files in mbtiles dir and loop through
+    for file in fnmatch.filter(os.listdir(mbtiles_path), '*.mbtiles'):
+        file_path = f"{mbtiles_path}/{file}"
+        layer_name = str(instance_id) + "_" + os.path.splitext(file)[0]
+        logger.info(f'Adding layer: {layer_name} into workspace: {worksp}')
 
-    try:
-        cursor = conn.cursor()
+        # create coverage store and associate with .mbtiles file
+        # also creates layer
+        fmt = f"mbtiles?configure=first&coverageName={layer_name}"
+        ret = geo.create_coveragestore(lyr_name=layer_name,
+                                       path=file_path,
+                                       workspace=worksp,
+                                       file_type=fmt,
+                                       content_type='application/vnd.sqlite3')
+        logger.debug(f"Attempted to add coverage store, file path: {file_path}  return value: {ret}")
 
-        sql_stmt = 'INSERT INTO "ASGS_Mon_config_item" (key, value, instance_id) VALUES(%s, %s, %s)'
-        params = [f"'{key_name}'", f"'{key_value}'", instanceId]
-        logging.debug(f"sql statement is: {sql_stmt} params are: {params}")
+        # update DB with url of layer for access from website NEED INSTANCE ID for this
+        layer_url = f'{url}rest/workspaces/{worksp}/coveragestores/{layer_name}.json'
+        logger.debug(f"Adding coverage store to DB, instanceId: {instance_id} coveragestore url: {layer_url}")
+        asgsdb = asgsDB(logger)
+        asgsdb.saveImageURL(instance_id, file, layer_url)
 
-        cursor.execute(sql_stmt, params)
-    except:
-        e = sys.exc_info()[0]
-        logging.error(f"FAILURE - Cannot update ASGS_DB. error {e}")
-    finally:
-        asgsDB_close(conn)
+
+# add a datastore in geoserver for the stationProps.csv file
+def add_props_datastore(logger, geo, instance_id, worksp, final_path):
+    stations_filename = "stationsProps.csv"
+    insets_path = f"{final_path}/insets/{stations_filename}"
+    store_name = str(instance_id) + "_station_props"
+    ret = geo.create_datastore(name=store_name, path=insets_path, workspace=worksp)
+    logger.debug(f"Attempted to add data store, file path: {insets_path}  return value: {ret}")
+
+
+# copy all .png files to the geoserver host to serve them from there
+def copy_pngs(logger, url, instance_id, final_path):
+    projects_path = "/projects/ees/APSViz/obs_pngs"
+    parsed_url = urllib.parse.urlparse(url)
+    from_path = f"{final_path}/insets/"
+    to_path = f"apsviz@{parsed_url.netloc}:{projects_path}/{instance_id}/"
+
+    # first create new directory if not already existing
+    new_dir = f"{projects_path}/{instance_id}"
+    logger.debug(f"Creating to path directory: {new_dir}")
+    mkdir_cmd = f'ssh apsviz@{parsed_url.netloc} "mkdir -p {new_dir}"'
+    call(mkdir_cmd.split)
+
+    for file in fnmatch.filter(os.listdir(from_path), '*.png'):
+        from_file_path = from_path + file
+        to_file_path = to_path + file
+        logger.debug(f"Copying .png file from: {from_file_path}  to: {to_file_path}")
+        scp_cmd = f'scp -r -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" {from_file_path} {to_file_path}'
+        call(scp_cmd.split())
+
 
 # given an instance id and an input dir (where to find mbtiles)
 # add the mbtiles to the specified GeoServer (configured with env vars)
 # then update the specified DB with the access urls (configured with env vars)
 
 def main(args):
-    logging.basicConfig(filename='stage-data-load-images.log',format='%(asctime)s : %(levelname)s : %(funcName)s : %(module)s : %(name)s : %(message)s', level=logging.DEBUG)
+    # logging.basicConfig(filename='stage-data-load-images.log',format='%(asctime)s : %(levelname)s : %(funcName)s : %(module)s : %(name)s : %(message)s', level=logging.DEBUG)
+
+    # get the log level and directory from the environment
+    log_level: int = int(os.getenv('LOG_LEVEL', logging.INFO))
+    log_path: str = os.getenv('LOG_PATH', os.path.dirname(__file__))
+
+    # create the dir if it does not exist
+    if not os.path.exists(log_path):
+        os.mkdir(log_path)
+
+    # create a logger
+    logger = LoggingUtil.init_logging("APSVIZ.stage_data", level=log_level, line_format='medium',
+                                      log_file_path=log_path)
 
     # process args
     if not args.instanceId:
@@ -70,55 +162,34 @@ def main(args):
         return 1
     instance_id = args.instanceId.strip()
 
+    # collect needed info from env vars
     user = os.getenv('GEOSERVER_USER', 'user').strip()
     pswd = os.environ.get('GEOSERVER_PASSWORD', 'password').strip()
     url = os.environ.get('GEOSERVER_URL', 'url').strip()
     worksp = os.environ.get('GEOSERVER_WORKSPACE', 'ADCIRC_2021').strip()
+    logger.debug(f"Retrieved GeoServer env vars - url: {url}, workspace: {worksp}")
 
-    logging.info(f"Connecting to GeoServer at host: {url}")
+    logger.info(f"Connecting to GeoServer at host: {url}")
     # create a GeoServer connection
     geo = Geoserver(url, username=user, password=pswd)
 
-    # create a new workspace
-    if (geo.get_workspace(worksp) is None):
-        geo.create_workspace(workspace=worksp)
+    # create a new workspace in geoserver if it does not already exist
+    add_workspace(logger, geo, worksp)
 
     # final dir path needs to be well defined
     # dir structure looks like this: /data/<instance id>/mbtiles/<parameter name>.<zoom level>.mbtiles
     final_path = "/data/" + instance_id
     mbtiles_path = final_path + "/mbtiles"
 
-    # temporary file set to test with
-    #tile_set = {
-        #"maxele.63.0.9",
-        #"maxwvel.63.0.9",
-        #"swan_HS_max.63.0.9",
-        #"maxele.63.10.10",
-        #"maxwvel.63.10.10",
-        #"swan_HS_max.63.10.10",
-        #"maxele.63.1.11",
-        #"maxwvel.63.11.11",
-        #"swan_HS_max.63.11.11",
-        #"maxele.63.12.12",
-        #"maxwvel.63.12.12",
-        #"swan_HS_max.63.12.12"
-    #}
+    # add a coverage store to geoserver for each .mbtiles found in the staging dir
+    add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_path)
 
-    # format of mbtiles is ex: maxele.63.0.9.mbtiles
-    # pull out meaningful pieces of file name
-    # get all files in mbtiles dir and loop through
-    for file in fnmatch.filter(os.listdir(mbtiles_path), '*.mbtiles'):
-        file_path = f"{mbtiles_path}/{file}"
-        layer_name = str(instance_id) + "_" + os.path.splitext(file)[0]
-        logging.info(f'Adding layer: {layer_name} into workspace: {worksp}')
+    # now put NOAA OBS .csv file into geoserver
+    add_props_datastore(logger, geo, instance_id, worksp, final_path)
 
-        # create datastore and associate with .mbtiles file
-        ret = geo.create_coveragestore(lyr_name=layer_name, path=file_path, workspace=worksp, file_type='mbtiles')
-        logging.debug(f"Attempted to add coverage store, file path: {file_path}  return value: {ret}")
+    # finally copy all .png files to the geoserver host to serve them from there
+    copy_pngs(logger, url, instance_id, final_path)
 
-        # update DB with url of layer for access from website NEED INSTANCE ID for this
-        layer_url = f'{url}rest/workspaces/{worksp}/coveragestores/{layer_name}.json'
-        asgsDB_update(instance_id, file, layer_url)
 
 
 if __name__ == '__main__':
