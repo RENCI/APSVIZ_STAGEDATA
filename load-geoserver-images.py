@@ -109,7 +109,7 @@ def add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_pa
 
 # add a datastore in geoserver for the stationProps.csv file
 def add_props_datastore(logger, geo, instance_id, worksp, final_path):
-    stations_filename = "stationsProps.csv"
+    stations_filename = "stationProps.csv"
     insets_path = f"{final_path}/insets/{stations_filename}"
     store_name = str(instance_id) + "_station_props"
     ret = geo.create_datastore(name=store_name, path=insets_path, workspace=worksp)
