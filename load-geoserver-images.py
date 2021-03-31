@@ -87,6 +87,7 @@ def add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_pa
     # get all files in mbtiles dir and loop through
     for file in fnmatch.filter(os.listdir(mbtiles_path), '*.mbtiles'):
         file_path = f"{mbtiles_path}/{file}"
+        logger.debug(f"add_mbtiles_coveragestores: file={file_path}")
         layer_name = str(instance_id) + "_" + os.path.splitext(file)[0]
         logger.info(f'Adding layer: {layer_name} into workspace: {worksp}')
 
@@ -127,7 +128,7 @@ def copy_pngs(logger, url, instance_id, final_path):
     new_dir = f"{projects_path}/{instance_id}"
     logger.debug(f"Creating to path directory: {new_dir}")
     mkdir_cmd = f'ssh apsviz@{parsed_url.netloc} "mkdir -p {new_dir}"'
-    call(mkdir_cmd.split)
+    call(mkdir_cmd.split())
 
     for file in fnmatch.filter(os.listdir(from_path), '*.png'):
         from_file_path = from_path + file
