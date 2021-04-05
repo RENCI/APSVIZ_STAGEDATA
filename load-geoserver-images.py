@@ -126,8 +126,9 @@ def copy_pngs(logger, url, instance_id, final_path):
 
     # first create new directory if not already existing
     new_dir = f"{projects_path}/{instance_id}"
-    logger.debug(f"Creating to path directory: {new_dir}")
+    logger.debug(f"copy_pngs: Creating to path directory: {new_dir}")
     mkdir_cmd = f'ssh apsviz@{parsed_url.netloc} "mkdir -p {new_dir}"'
+    logger.debug(f"copy_pngs: mkdir_cmd.split={mkdir_cmd}.split()")
     call(mkdir_cmd.split())
 
     for file in fnmatch.filter(os.listdir(from_path), '*.png'):
@@ -147,7 +148,7 @@ def main(args):
 
     # get the log level and directory from the environment
     log_level: int = int(os.getenv('LOG_LEVEL', logging.INFO))
-    log_path: str = os.getenv('LOG_PATH', os.path.dirname(__file__))
+    log_path: str = os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs'))
 
     # create the dir if it does not exist
     if not os.path.exists(log_path):
