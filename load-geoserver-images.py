@@ -120,7 +120,7 @@ def add_props_datastore(logger, geo, instance_id, worksp, final_path):
 # copy all .png files to the geoserver host to serve them from there
 def copy_pngs(logger, geoserver_host, geoserver_vm_userid, geoserver_proj_path, instance_id, final_path):
 
-    from_path = f"{final_path}/insets/"
+    from_path = f"{final_path}/adcirc-supp/insets/"
     to_path = f"{geoserver_vm_userid}@{geoserver_host}:{geoserver_proj_path}/{instance_id}/"
 
     # first create new directory if not already existing
@@ -169,7 +169,7 @@ def main(args):
     url = os.environ.get('GEOSERVER_URL', 'url').strip()
     worksp = os.environ.get('GEOSERVER_WORKSPACE', 'ADCIRC_2021').strip()
     geoserver_host = os.environ.get('GEOSERVER_HOST', 'host.here.org').strip()
-    geoserver_vm_userid = os.environ.get('SSH-USERNAME', 'user').strip()
+    geoserver_vm_userid = os.environ.get('SSH_USERNAME', 'user').strip()
     geoserver_proj_path = os.environ.get('GEOSERVER_PROJ_PATH', '/projects').strip()
     logger.debug(f"Retrieved GeoServer env vars - url: {url}, workspace: {worksp}")
 
