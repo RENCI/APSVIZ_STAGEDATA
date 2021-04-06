@@ -56,7 +56,7 @@ def main(args):
 
     num = len(filelist)
     for v in filelist:
-        outname=getDataFile(args.outputDir, inputURL, filelist[v])
+        outname=getDataFile(args.outputDir, inputURL, filelist[v], logger)
         print(f"")
     logger.info('Finished moving {} files '.format(num))
 

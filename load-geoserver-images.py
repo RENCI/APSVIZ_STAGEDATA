@@ -155,7 +155,7 @@ def main(args):
         os.mkdir(log_path)
 
     # create a logger
-    logger = LoggingUtil.init_logging("APSVIZ.stage_data", level=log_level, line_format='medium',
+    logger = LoggingUtil.init_logging("APSVIZ.load-geoserver-images", level=log_level, line_format='medium',
                                       log_file_path=log_path)
 
     # process args
