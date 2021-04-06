@@ -169,7 +169,7 @@ def main(args):
     url = os.environ.get('GEOSERVER_URL', 'url').strip()
     worksp = os.environ.get('GEOSERVER_WORKSPACE', 'ADCIRC_2021').strip()
     geoserver_host = os.environ.get('GEOSERVER_HOST', 'host.here.org').strip()
-    geoserver_vm_userid = os.environ.get('GEOSERVER_VM_USER', 'user').strip()
+    geoserver_vm_userid = os.environ.get('SSH-USERNAME', 'user').strip()
     geoserver_proj_path = os.environ.get('GEOSERVER_PROJ_PATH', '/projects').strip()
     logger.debug(f"Retrieved GeoServer env vars - url: {url}, workspace: {worksp}")
 
