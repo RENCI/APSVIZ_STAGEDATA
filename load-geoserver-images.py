@@ -122,7 +122,7 @@ def copy_pngs(logger, url, instance_id, final_path):
     projects_path = "/projects/ees/APSViz/obs_pngs"
     parsed_url = urllib.parse.urlparse(url)
     from_path = f"{final_path}/insets/"
-    to_path = f"apsviz@{parsed_url.netloc}:{projects_path}/{instance_id}/"
+    to_path = f"lisa@{parsed_url.netloc}:{projects_path}/{instance_id}/"
 
     # first create new directory if not already existing
     new_dir = f"{projects_path}/{instance_id}"
