@@ -175,10 +175,10 @@ def main(args):
 
     logger.info(f"Connecting to GeoServer at host: {url}")
     # create a GeoServer connection
-    #geo = Geoserver(url, username=user, password=pswd)
+    geo = Geoserver(url, username=user, password=pswd)
 
     # create a new workspace in geoserver if it does not already exist
-    #add_workspace(logger, geo, worksp)
+    add_workspace(logger, geo, worksp)
 
     # final dir path needs to be well defined
     # dir structure looks like this: /data/<instance id>/mbtiles/<parameter name>.<zoom level>.mbtiles
@@ -186,7 +186,7 @@ def main(args):
     mbtiles_path = final_path + "/mbtiles"
 
     # add a coverage store to geoserver for each .mbtiles found in the staging dir
-    #add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_path)
+    add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_path)
 
     # now put NOAA OBS .csv file into geoserver
     #add_props_datastore(logger, geo, instance_id, worksp, final_path)
