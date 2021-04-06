@@ -118,16 +118,15 @@ def add_props_datastore(logger, geo, instance_id, worksp, final_path):
 
 
 # copy all .png files to the geoserver host to serve them from there
-def copy_pngs(logger, url, instance_id, final_path):
-    projects_path = "/projects/ees/APSViz/obs_pngs"
-    parsed_url = urllib.parse.urlparse(url)
+def copy_pngs(logger, geoserver_host, geoserver_vm_userid, geoserver_proj_path, instance_id, final_path):
+
     from_path = f"{final_path}/insets/"
-    to_path = f"lisa@{parsed_url.netloc}:{projects_path}/{instance_id}/"
+    to_path = f"{geoserver_vm_userid}@{geoserver_host}:{geoserver_proj_path}/{instance_id}/"
 
     # first create new directory if not already existing
-    new_dir = f"{projects_path}/{instance_id}"
+    new_dir = f"{geoserver_proj_path}/{instance_id}"
     logger.debug(f"copy_pngs: Creating to path directory: {new_dir}")
-    mkdir_cmd = f'ssh apsviz@{parsed_url.netloc} "mkdir -p {new_dir}"'
+    mkdir_cmd = f'ssh {geoserver_vm_userid}@{geoserver_host} "mkdir -p {new_dir}"'
     logger.debug(f"copy_pngs: mkdir_cmd.split={mkdir_cmd}.split()")
     call(mkdir_cmd.split())
 
@@ -169,6 +168,9 @@ def main(args):
     pswd = os.environ.get('GEOSERVER_PASSWORD', 'password').strip()
     url = os.environ.get('GEOSERVER_URL', 'url').strip()
     worksp = os.environ.get('GEOSERVER_WORKSPACE', 'ADCIRC_2021').strip()
+    geoserver_host = os.environ.get('GEOSERVER_HOST', 'host.here.org').strip()
+    geoserver_vm_userid = os.environ.get('GEOSERVER_VM_USER', 'user').strip()
+    geoserver_proj_path = os.environ.get('GEOSERVER_PROJ_PATH', '/projects').strip()
     logger.debug(f"Retrieved GeoServer env vars - url: {url}, workspace: {worksp}")
 
     logger.info(f"Connecting to GeoServer at host: {url}")
@@ -190,7 +192,7 @@ def main(args):
     #add_props_datastore(logger, geo, instance_id, worksp, final_path)
 
     # finally copy all .png files to the geoserver host to serve them from there
-    copy_pngs(logger, url, instance_id, final_path)
+    copy_pngs(logger, geoserver_host, geoserver_vm_userid, geoserver_proj_path, instance_id, final_path)
 
 
 
