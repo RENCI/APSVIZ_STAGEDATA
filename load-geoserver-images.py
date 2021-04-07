@@ -7,7 +7,6 @@ import urllib.parse
 from geo.Geoserver import Geoserver
 from geoserver.catalog import Catalog
 from common.logging import LoggingUtil
-from subprocess import call
 
 class asgsDB:
 
@@ -126,16 +125,16 @@ def copy_pngs(logger, geoserver_host, geoserver_vm_userid, geoserver_proj_path, 
     # first create new directory if not already existing
     new_dir = f"{geoserver_proj_path}/{instance_id}"
     logger.debug(f"copy_pngs: Creating to path directory: {new_dir}")
-    mkdir_cmd = f'ssh -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" {geoserver_vm_userid}@{geoserver_host} "mkdir -p {new_dir}"'
-    logger.debug(f"copy_pngs: mkdir_cmd.split={mkdir_cmd}.split()")
-    call(mkdir_cmd.split())
+    mkdir_cmd = f'ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no {geoserver_vm_userid}@{geoserver_host} "mkdir -p {new_dir}"'
+    logger.debug(f"copy_pngs: mkdir_cmd={mkdir_cmd}")
+    os.system(mkdir_cmd)
 
     for file in fnmatch.filter(os.listdir(from_path), '*.png'):
         from_file_path = from_path + file
         to_file_path = to_path + file
         logger.debug(f"Copying .png file from: {from_file_path}  to: {to_file_path}")
-        scp_cmd = f'scp -r -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" {from_file_path} {to_file_path}'
-        call(scp_cmd.split())
+        scp_cmd = f'scp -r -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no {from_file_path} {to_file_path}'
+        os.system(scp_cmd)
 
 
 # given an instance id and an input dir (where to find mbtiles)
