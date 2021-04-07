@@ -126,7 +126,7 @@ def copy_pngs(logger, geoserver_host, geoserver_vm_userid, geoserver_proj_path, 
     # first create new directory if not already existing
     new_dir = f"{geoserver_proj_path}/{instance_id}"
     logger.debug(f"copy_pngs: Creating to path directory: {new_dir}")
-    mkdir_cmd = f'ssh {geoserver_vm_userid}@{geoserver_host} "mkdir -p {new_dir}"'
+    mkdir_cmd = f'ssh -o "UserKnownHostsFile=/dev/null" -o "StrictHostKeyChecking=no" {geoserver_vm_userid}@{geoserver_host} "mkdir -p {new_dir}"'
     logger.debug(f"copy_pngs: mkdir_cmd.split={mkdir_cmd}.split()")
     call(mkdir_cmd.split())
 
