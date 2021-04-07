@@ -9,6 +9,9 @@
 
 FROM thinkwhere/gdal-python
 
+# set the logging level
+ENV LOG_LEVEL=10
+
 # get some credit
 LABEL maintainer="jtilson@renci.org"
 
