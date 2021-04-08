@@ -53,23 +53,38 @@ class asgsDB:
 
             cursor.execute(sql_stmt, params)
         except:
-             e = sys.exc_info()[0]
-             self.logger.error(f"FAILURE - Cannot update ASGS_DB. error {e}")
+            e = sys.exc_info()[0]
+            self.logger.error(f"FAILURE - Cannot update ASGS_DB. error {e}")
 
+    # need to retrieve some values - related to this run - from the ASGS DB
+    # currently: Date, Cycle, Storm Name (if any), and Advisory (if any)
+    # if more are needed, add to metadata_dict
     def getRunMetadata(self, instanceId):
+        metadata_dict = {
+            'currentdate': '',
+            'currentcycle': '',
+            'advisory': '',
+            'forcing.stormname': ''
+        }
         self.logger.debug(f'Retrieving DB record metadata - instance id: {instanceId}')
 
         try:
             cursor = self.conn.cursor()
 
-            sql_stmt = 'SELECT key FROM "ASGS_Mon_config_item" key, value, instance_id WHERE instance_id=%s'
-            params = [f"'{key_name}'", f"'{key_value}'", instanceId]
-            self.logger.debug(f"sql statement is: {sql_stmt} params are: {params}")
-
-            cursor.execute(sql_stmt, params)
+            for key in metadata_dict.keys():
+                sql_stmt = 'SELECT value FROM "ASGS_Mon_config_item WHERE instance_id=%s AND key=' + "'" +"%s" + "'"
+                params = [key, instanceId]
+                self.logger.debug(f"sql statement is: {sql_stmt} params are: {params}")
+                cursor.execute(sql_stmt, params)
+                ret = cursor.fetchone()
+                if ret:
+                    self.logger.debug(f"value returned is: {ret}")
+                    metadata_dict[key] = ret
         except:
              e = sys.exc_info()[0]
-             self.logger.error(f"FAILURE - Cannot update ASGS_DB. error {e}")
+             self.logger.error(f"FAILURE - Cannot retrieve run properties metadata from ASGS_DB. error {e}")
+        finally:
+            return metadata_dict
 
 
 
@@ -77,6 +92,24 @@ class asgsDB:
 def add_workspace(logger, geo, worksp):
     if (geo.get_workspace(worksp) is None):
         geo.create_workspace(workspace=worksp)
+
+
+# tweak the layer title to make it more readable in Terria Map
+def update_layer_title(logger, geo, instance_id, worksp, layer_name):
+    run_date = ''
+    # first get metadata from this model run
+    asgsdb = asgsDB(logger)
+    meta_dict = asgsdb.getRunMetadata(instance_id)
+    raw_date = meta_dict['currentdate']
+    if raw_date:
+        # raw date format is YYMMDD
+        date_list = [raw_date[i:i+2] for i in range(0, len(raw_date), 2)]
+        if date_list.len == 3:
+            run_date = f"{date_list[1]}-{date_list[2]}-{date_list[0]}"
+
+    title = f"Date: {run_date} Cycle: {meta_dict['currentcycle']} Storm Name: {meta_dict['forcing.stormname']} Advisory:{meta_dict['advisory']}"
+    logger.debug("setting this coverage: {layer_name} to {title}")
+    geo.set_coverage_title(worksp, layer_name, layer_name, title)
 
 
 # add a coverage store to geoserver for each .mbtiles found in the staging dir
@@ -100,6 +133,10 @@ def add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_pa
                                        content_type='application/vnd.sqlite3')
         logger.debug(f"Attempted to add coverage store, file path: {file_path}  return value: {ret}")
 
+        # now we just need to tweak the layer title to make it more
+        # readable in Terria Map
+        update_layer_title(logger, geo, instance_id, worksp, layer_name)
+
         # update DB with url of layer for access from website NEED INSTANCE ID for this
         layer_url = f'{url}rest/workspaces/{worksp}/coveragestores/{layer_name}.json'
         logger.debug(f"Adding coverage store to DB, instanceId: {instance_id} coveragestore url: {layer_url}")
@@ -108,12 +145,21 @@ def add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_pa
 
 
 # add a datastore in geoserver for the stationProps.csv file
+# as of 4/8/21 this feature is broken in GeoServer so going to
+# add a DB datastore for this data
+#def add_props_datastore(logger, geo, instance_id, worksp, final_path):
+    #stations_filename = "stationProps.csv"
+    #insets_path = f"{final_path}/insets/{stations_filename}"
+    #store_name = str(instance_id) + "_station_props"
+    #ret = geo.create_datastore(name=store_name, path=insets_path, workspace=worksp)
+    #logger.debug(f"Attempted to add data store, file path: {insets_path}  return value: {ret}")
+
+
+# add a datastore in geoserver for the stationProps.csv file
 def add_props_datastore(logger, geo, instance_id, worksp, final_path):
     stations_filename = "stationProps.csv"
     insets_path = f"{final_path}/insets/{stations_filename}"
     store_name = str(instance_id) + "_station_props"
-    ret = geo.create_datastore(name=store_name, path=insets_path, workspace=worksp)
-    logger.debug(f"Attempted to add data store, file path: {insets_path}  return value: {ret}")
 
 
 # copy all .png files to the geoserver host to serve them from there
@@ -129,12 +175,16 @@ def copy_pngs(logger, geoserver_host, geoserver_vm_userid, geoserver_proj_path, 
     logger.debug(f"copy_pngs: mkdir_cmd={mkdir_cmd}")
     os.system(mkdir_cmd)
 
+    # now go through any .png files in the
     for file in fnmatch.filter(os.listdir(from_path), '*.png'):
         from_file_path = from_path + file
         to_file_path = to_path + file
         logger.debug(f"Copying .png file from: {from_file_path}  to: {to_file_path}")
         scp_cmd = f'scp -r -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no {from_file_path} {to_file_path}'
         os.system(scp_cmd)
+
+# add the lastest layers inserted into GeoServer to the TerriaMap catalog
+# def updateTerriaCatalog(logging):
 
 
 # given an instance id and an input dir (where to find mbtiles)
