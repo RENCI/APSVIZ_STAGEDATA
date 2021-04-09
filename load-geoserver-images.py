@@ -148,7 +148,7 @@ def update_layer_title(logger, geo, instance_id, worksp, layer_name):
     if raw_date:
         # raw date format is YYMMDD
         date_list = [raw_date[i:i+2] for i in range(0, len(raw_date), 2)]
-        if date_list.len == 3:
+        if len(date_list) == 3:
             run_date = f"{date_list[1]}-{date_list[2]}-{date_list[0]}"
 
     title = f"Date: {run_date} Cycle: {meta_dict['currentcycle']} Storm Name: {meta_dict['forcing.stormname']} Advisory:{meta_dict['advisory']}"
