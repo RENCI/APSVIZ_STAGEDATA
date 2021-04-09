@@ -87,7 +87,7 @@ class asgsDB:
             cursor = self.conn.cursor()
 
             for key in metadata_dict.keys():
-                sql_stmt = 'SELECT value FROM "ASGS_Mon_config_item WHERE instance_id=%s AND key=' + "'" +"%s" + "'"
+                sql_stmt = 'SELECT value FROM "ASGS_Mon_config_item" WHERE instance_id=%s AND key=' + "'" +"%s" + "'"
                 params = [instanceId, key]
                 self.logger.debug(f"sql statement is: {sql_stmt} params are: {params}")
                 cursor.execute(sql_stmt, params)
