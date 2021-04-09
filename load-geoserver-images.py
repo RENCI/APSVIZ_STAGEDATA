@@ -93,7 +93,7 @@ class asgsDB:
                 ret = cursor.fetchone()
                 if ret:
                     self.logger.debug(f"value returned is: {ret}")
-                    metadata_dict[key] = ret
+                    metadata_dict[key] = ret[0]
         except:
              e = sys.exc_info()[0]
              self.logger.error(f"FAILURE - Cannot retrieve run properties metadata from ASGS_DB. error {e}")
@@ -149,7 +149,7 @@ def update_layer_title(logger, geo, instance_id, worksp, layer_name):
         # raw date format is YYMMDD
         date_list = [raw_date[i:i+2] for i in range(0, len(raw_date), 2)]
         if len(date_list) == 3:
-            run_date = f"{date_list[1]}-{date_list[2]}-{date_list[0]}"
+            run_date = f"{date_list[1]}-{date_list[2]}-20{date_list[0]}"
 
     title = f"Date: {run_date} Cycle: {meta_dict['currentcycle']} Storm Name: {meta_dict['forcing.stormname']} Advisory:{meta_dict['advisory']}"
     logger.debug(f"setting this coverage: {layer_name} to {title}")
