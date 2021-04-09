@@ -142,7 +142,8 @@ def add_workspace(logger, geo, worksp):
 def update_layer_title(logger, geo, instance_id, worksp, layer_name):
     run_date = ''
     # first get metadata from this model run
-    asgsdb = asgsDB(logger)
+    db_name = os.getenv('ASGS_DB_DATABASE', 'asgs').strip()
+    asgsdb = asgsDB(logger, db_name)
     meta_dict = asgsdb.getRunMetadata(instance_id)
     raw_date = meta_dict['currentdate']
     if raw_date:
@@ -304,7 +305,7 @@ def main(args):
     add_props_datastore(logger, geo, instance_id, worksp, final_path, geoserver_host)
 
     # finally copy all .png files to the geoserver host to serve them from there
-    copy_pngs(logger, geoserver_host, geoserver_vm_userid, geoserver_proj_path, instance_id, final_path)
+    //copy_pngs(logger, geoserver_host, geoserver_vm_userid, geoserver_proj_path, instance_id, final_path)
 
 
 
