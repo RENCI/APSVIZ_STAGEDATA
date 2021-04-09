@@ -305,7 +305,7 @@ def main(args):
     add_props_datastore(logger, geo, instance_id, worksp, final_path, geoserver_host)
 
     # finally copy all .png files to the geoserver host to serve them from there
-    //copy_pngs(logger, geoserver_host, geoserver_vm_userid, geoserver_proj_path, instance_id, final_path)
+    #copy_pngs(logger, geoserver_host, geoserver_vm_userid, geoserver_proj_path, instance_id, final_path)
 
 
 
