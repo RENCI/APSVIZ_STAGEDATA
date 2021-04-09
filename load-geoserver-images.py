@@ -2,6 +2,7 @@ import os, sys
 import fnmatch
 import logging
 import psycopg2
+import csv
 import urllib.parse
 
 from geo.Geoserver import Geoserver
@@ -10,15 +11,16 @@ from common.logging import LoggingUtil
 
 class asgsDB:
 
-    def __init__(self, logger):
+    def __init__(self, logger, dbname):
         self.conn = None
         self.logger = logger
 
-        user = os.getenv('ASGS_DB_USERNAME', 'user').strip()
-        pswd = os.getenv('ASGS_DB_PASSWORD', 'password').strip()
-        host = os.getenv('ASGS_DB_HOST', 'host').strip()
-        port = os.getenv('ASGS_DB_PORT', '5432').strip()
-        db_name = os.getenv('ASGS_DB_DATABASE', 'asgs').strip()
+        self.user = os.getenv('ASGS_DB_USERNAME', 'user').strip()
+        self.pswd = os.getenv('ASGS_DB_PASSWORD', 'password').strip()
+        self.host = os.getenv('ASGS_DB_HOST', 'host').strip()
+        self.port = os.getenv('ASGS_DB_PORT', '5432').strip()
+        # self.db_name = os.getenv('ASGS_DB_DATABASE', 'asgs').strip()
+        self.db_name = dbname
 
         try:
             # connect to asgs database
@@ -34,6 +36,19 @@ class asgsDB:
     def __del__(self):
         if (self.conn):
             self.conn.close()
+
+    def get_user(self):
+        return self.user
+
+    def get_password(self):
+        return self.pswd
+
+    def get_host(self):
+        return self.host
+
+    def get_port(self):
+        return self.port
+
 
     # given instance id - save geoserver url (to access this mbtiles layer) in the asgs database
     def saveImageURL(self, instanceId, name, url):
@@ -66,7 +81,7 @@ class asgsDB:
             'advisory': '',
             'forcing.stormname': ''
         }
-        self.logger.debug(f'Retrieving DB record metadata - instance id: {instanceId}')
+        self.logger.info(f'Retrieving DB record metadata - instance id: {instanceId}')
 
         try:
             cursor = self.conn.cursor()
@@ -85,6 +100,35 @@ class asgsDB:
              self.logger.error(f"FAILURE - Cannot retrieve run properties metadata from ASGS_DB. error {e}")
         finally:
             return metadata_dict
+
+    # find the stationProps.csv file and insert the contents
+    # into the adcirc_obs db of the ASGS postgres instance
+    def insert_station_props(self, logger, geo, instance_id, worksp, csv_file_path, geoserver_host):
+        # where to find the stationProps.csv file
+        logging.info(f"Saving {csv_file_path} to DB")
+
+        cursor = self.conn.cursor()
+
+        # open the stationProps.csv file and save in db
+        # must create the_geom from lat, lon provided in csv file
+        # also add to instance id column
+        # and finally, create an url where the obs chart for each station can be accessed
+        try:
+            with open(csv_file_path, 'r') as f:
+                reader = csv.reader(f)
+                next(reader)  # Skip the header row.
+                for row in reader:
+                    logger.debug(f"opened csv file - saveing this row to db: {row}")
+                    png_url = f"https://{geoserver_host}/obs_pngs/{instance_id}/{row[6]}"
+                    cursor.execute(
+                        "INSERT INTO users VALUES (%s, %s, %s, %s %s %s %s ST_SetSRID(ST_MakePoint(%s, %s),4326)) %s %s)",
+                        row, row[4], row[3], instance_id, png_url
+                    )
+            self.conn.commit()
+        except:
+            e = sys.exc_info()[0]
+            self.logger.error(f"FAILURE - Cannot save run properties in ASGS_DB. error {e}")
+
 
 
 
@@ -109,7 +153,7 @@ def update_layer_title(logger, geo, instance_id, worksp, layer_name):
 
     title = f"Date: {run_date} Cycle: {meta_dict['currentcycle']} Storm Name: {meta_dict['forcing.stormname']} Advisory:{meta_dict['advisory']}"
     logger.debug("setting this coverage: {layer_name} to {title}")
-    geo.set_coverage_title(worksp, layer_name, layer_name, title)
+    geo.set_coverage_title(instance_id, worksp, layer_name, layer_name, title)
 
 
 # add a coverage store to geoserver for each .mbtiles found in the staging dir
@@ -140,7 +184,8 @@ def add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_pa
         # update DB with url of layer for access from website NEED INSTANCE ID for this
         layer_url = f'{url}rest/workspaces/{worksp}/coveragestores/{layer_name}.json'
         logger.debug(f"Adding coverage store to DB, instanceId: {instance_id} coveragestore url: {layer_url}")
-        asgsdb = asgsDB(logger)
+        db_name = os.getenv('ASGS_DB_DATABASE', 'asgs').strip()
+        asgsdb = asgsDB(logger, db_name)
         asgsdb.saveImageURL(instance_id, file, layer_url)
 
 
@@ -156,10 +201,28 @@ def add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_pa
 
 
 # add a datastore in geoserver for the stationProps.csv file
-def add_props_datastore(logger, geo, instance_id, worksp, final_path):
+def add_props_datastore(logger, geo, instance_id, worksp, final_path, geoserver_host):
+    logging.info(f"Adding the station properties datastore for instance id: {instance_id}")
+    # set up paths and datastore name
     stations_filename = "stationProps.csv"
-    insets_path = f"{final_path}/insets/{stations_filename}"
+    csv_file_path = f"{final_path}/adcirc-supp/insets/{stations_filename}"
     store_name = str(instance_id) + "_station_props"
+    dbname = "adcirc_obs"
+    table_name = "stations"
+    cql = f"instanceid={instance_id}"
+    logger.debug(f"csv_file_path: {csv_file_path} store name: {store_name}")
+
+    # get asgs db connection
+    asgsdb = asgsDB(logger, dbname)
+    # save to db
+    asgsdb.insert_station_props(logger, geo, instance_id, worksp, csv_file_path, geoserver_host)
+
+    # create this layer in geoserver
+    geo.create_featurestore(store_name, workspace=worksp, db='postgres', host=asgsdb.get_host(), port=asgsdb.get_port(), schema=table_name,
+                        pg_user=asgsdb.get_user(), pg_password=asgsdb.get_password(), overwrite=False)
+    # now publish this layer with a CQL filter based on instance_id
+    geo.publish_featurestore_withCQL(store_name, table_name, cql, workspace=worksp)
+
 
 
 # copy all .png files to the geoserver host to serve them from there
@@ -167,7 +230,7 @@ def copy_pngs(logger, geoserver_host, geoserver_vm_userid, geoserver_proj_path, 
 
     from_path = f"{final_path}/adcirc-supp/insets/"
     to_path = f"{geoserver_vm_userid}@{geoserver_host}:{geoserver_proj_path}/{instance_id}/"
-
+    logger.info(f"Copying insets png files from: {from_path} to: {to_path}")
     # first create new directory if not already existing
     new_dir = f"{geoserver_proj_path}/{instance_id}"
     logger.debug(f"copy_pngs: Creating to path directory: {new_dir}")
@@ -220,7 +283,7 @@ def main(args):
     geoserver_host = os.environ.get('GEOSERVER_HOST', 'host.here.org').strip()
     geoserver_vm_userid = os.environ.get('SSH_USERNAME', 'user').strip()
     geoserver_proj_path = os.environ.get('GEOSERVER_PROJ_PATH', '/projects').strip()
-    logger.debug(f"Retrieved GeoServer env vars - url: {url}, workspace: {worksp}")
+    logger.debug(f"Retrieved GeoServer env vars - url: {url} workspace: {worksp} geoserver_host: {geoserver_host} geoserver_proj_path: {geoserver_proj_path}")
 
     logger.info(f"Connecting to GeoServer at host: {url}")
     # create a GeoServer connection
@@ -238,7 +301,7 @@ def main(args):
     add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_path)
 
     # now put NOAA OBS .csv file into geoserver
-    #add_props_datastore(logger, geo, instance_id, worksp, final_path)
+    add_props_datastore(logger, geo, instance_id, worksp, final_path, geoserver_host)
 
     # finally copy all .png files to the geoserver host to serve them from there
     copy_pngs(logger, geoserver_host, geoserver_vm_userid, geoserver_proj_path, instance_id, final_path)
