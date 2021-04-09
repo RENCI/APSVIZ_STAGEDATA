@@ -88,7 +88,7 @@ class asgsDB:
 
             for key in metadata_dict.keys():
                 sql_stmt = 'SELECT value FROM "ASGS_Mon_config_item WHERE instance_id=%s AND key=' + "'" +"%s" + "'"
-                params = [key, instanceId]
+                params = [instanceId, key]
                 self.logger.debug(f"sql statement is: {sql_stmt} params are: {params}")
                 cursor.execute(sql_stmt, params)
                 ret = cursor.fetchone()
@@ -154,7 +154,7 @@ def update_layer_title(logger, geo, instance_id, worksp, layer_name):
 
     title = f"Date: {run_date} Cycle: {meta_dict['currentcycle']} Storm Name: {meta_dict['forcing.stormname']} Advisory:{meta_dict['advisory']}"
     logger.debug(f"setting this coverage: {layer_name} to {title}")
-    geo.set_coverage_title(instance_id, worksp, layer_name, layer_name, title)
+    geo.set_coverage_title(worksp, layer_name, layer_name, title)
 
 
 # add a coverage store to geoserver for each .mbtiles found in the staging dir
