@@ -25,7 +25,6 @@ class asgsDB:
         try:
             # connect to asgs database
             conn_str = f'host={self.host} port={self.port} dbname={self.db_name} user={self.user} password={self.pswd}'
-            logger.debug("Connecting to ASGS DB - coonection string={conn_str}")
 
             self.conn = psycopg2.connect(conn_str)
             self.conn.set_session(autocommit=True)
@@ -87,7 +86,7 @@ class asgsDB:
             cursor = self.conn.cursor()
 
             for key in metadata_dict.keys():
-                sql_stmt = 'SELECT value FROM "ASGS_Mon_config_item" WHERE instance_id=%s AND key=' + "'" +"%s" + "'"
+                sql_stmt = 'SELECT value FROM "ASGS_Mon_config_item" WHERE instance_id=%s AND key=%s'
                 params = [instanceId, key]
                 self.logger.debug(f"sql statement is: {sql_stmt} params are: {params}")
                 cursor.execute(sql_stmt, params)
@@ -118,7 +117,7 @@ class asgsDB:
                 reader = csv.reader(f)
                 next(reader)  # Skip the header row.
                 for row in reader:
-                    logger.debug(f"opened csv file - saveing this row to db: {row}")
+                    logger.debug(f"opened csv file - saving this row to db: {row}")
                     png_url = f"https://{geoserver_host}/obs_pngs/{instance_id}/{row[6]}"
                     cursor.execute(
                         "INSERT INTO users VALUES (%s, %s, %s, %s %s %s %s ST_SetSRID(ST_MakePoint(%s, %s),4326)) %s %s)",
