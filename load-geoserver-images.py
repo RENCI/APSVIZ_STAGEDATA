@@ -24,7 +24,7 @@ class asgsDB:
 
         try:
             # connect to asgs database
-            conn_str = f'host={host} port={port} dbname={db_name} user={user} password={pswd}'
+            conn_str = f'host={self.host} port={self.port} dbname={self.db_name} user={self.user} password={self.pswd}'
             logger.debug("Connecting to ASGS DB - coonection string={conn_str}")
 
             self.conn = psycopg2.connect(conn_str)
@@ -153,7 +153,7 @@ def update_layer_title(logger, geo, instance_id, worksp, layer_name):
             run_date = f"{date_list[1]}-{date_list[2]}-{date_list[0]}"
 
     title = f"Date: {run_date} Cycle: {meta_dict['currentcycle']} Storm Name: {meta_dict['forcing.stormname']} Advisory:{meta_dict['advisory']}"
-    logger.debug("setting this coverage: {layer_name} to {title}")
+    logger.debug(f"setting this coverage: {layer_name} to {title}")
     geo.set_coverage_title(instance_id, worksp, layer_name, layer_name, title)
 
 
