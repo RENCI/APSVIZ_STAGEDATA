@@ -48,7 +48,7 @@ class asgsDB:
     def get_port(self):
         return self.port
 
-    def getdbname(self):
+    def get_dbname(self):
         return self.db_name
 
 
@@ -108,6 +108,7 @@ class asgsDB:
     def insert_station_props(self, logger, geo, instance_id, worksp, csv_file_path, geoserver_host):
         # where to find the stationProps.csv file
         logging.info(f"Saving {csv_file_path} to DB")
+        logging.debug(f"DB name is: {self.get_dbname()}")
 
         cursor = self.conn.cursor()
 
