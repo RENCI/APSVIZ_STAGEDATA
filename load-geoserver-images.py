@@ -124,7 +124,7 @@ class asgsDB:
                     png_url = f"https://{geoserver_host}/obs_pngs/{instance_id}/{row[6]}"
                     cursor.execute(
                         "INSERT INTO stations(stationid, stationname, state, lat, lon, node, filename, the_geom, instanceid, image_url) VALUES (%s, %s, %s, %s %s %s %s ST_SetSRID(ST_MakePoint(%s, %s),4326)) %s %s)",
-                        row, row[4], row[3], instance_id, png_url
+                        row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[4], row[3], instance_id, png_url
                     )
             self.conn.commit()
         except:
