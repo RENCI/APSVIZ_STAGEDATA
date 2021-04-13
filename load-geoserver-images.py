@@ -127,7 +127,7 @@ class asgsDB:
                     logger.debug(f"opened csv file - saving this row to db: {row}")
                     png_url = f"https://{geoserver_host}/obs_pngs/{instance_id}/{row[6]}"
                     #sql_stmt = "INSERT INTO stations(stationid, stationname, state, lat, lon, node, filename, the_geom, instanceid, imageurl) VALUES (%s, %s, %s, %s, %s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s),4326), %s, %s)"
-                    sql_stmt = "INSERT INTO stationsstationid, stationname, state, lat, lon, node, filename, the_geom, instanceid, imageurl) VALUES (%s, %s, %s, %s, %s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s),4326), %s, %s)"
+                    sql_stmt = "INSERT INTO stations (stationid, stationname, state, lat, lon, node, filename, the_geom, instanceid, imageurl) VALUES (%s, %s, %s, %s, %s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s),4326), %s, %s)"
                     params = [row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[4], row[3], instance_id, png_url]
                     logger.debug(f"sql_stmt: {sql_stmt} params: {sql_stmt}")
                     cursor.execute(sql_stmt, params)
