@@ -107,10 +107,13 @@ class asgsDB:
     # into the adcirc_obs db of the ASGS postgres instance
     def insert_station_props(self, logger, geo, instance_id, worksp, csv_file_path, geoserver_host):
         # where to find the stationProps.csv file
-        logging.info(f"Saving {csv_file_path} to DB")
-        logging.debug(f"DB name is: {self.get_dbname()}")
+        logger.info(f"Saving {csv_file_path} to DB")
+        logger.debug(f"DB name is: {self.get_dbname()}")
 
         cursor = self.conn.cursor()
+
+        # need to remove the .edc from the geoserver_host for now
+        host = geoserver_host.replace('.edc', '')
 
         # open the stationProps.csv file and save in db
         # must create the_geom from lat, lon provided in csv file
@@ -123,10 +126,12 @@ class asgsDB:
                 for row in reader:
                     logger.debug(f"opened csv file - saving this row to db: {row}")
                     png_url = f"https://{geoserver_host}/obs_pngs/{instance_id}/{row[6]}"
-                    cursor.execute(
-                        "INSERT INTO stations(stationid, stationname, state, lat, lon, node, filename, the_geom, instanceid, image_url) VALUES (%s, %s, %s, %s %s %s %s ST_SetSRID(ST_MakePoint(%s, %s),4326)) %s %s)",
-                        row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[4], row[3], instance_id, png_url
-                    )
+                    #sql_stmt = "INSERT INTO stations(stationid, stationname, state, lat, lon, node, filename, the_geom, instanceid, imageurl) VALUES (%s, %s, %s, %s, %s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s),4326), %s, %s)"
+                    sql_stmt = "INSERT INTO stationsstationid, stationname, state, lat, lon, node, filename, the_geom, instanceid, imageurl) VALUES (%s, %s, %s, %s, %s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s),4326), %s, %s)"
+                    params = [row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[4], row[3], instance_id, png_url]
+                    logger.debug(f"sql_stmt: {sql_stmt} params: {sql_stmt}")
+                    cursor.execute(sql_stmt, params)
+
             self.conn.commit()
         except:
             e = sys.exc_info()[0]
@@ -222,11 +227,11 @@ def add_props_datastore(logger, geo, instance_id, worksp, final_path, geoserver_
     asgsdb.insert_station_props(logger, geo, instance_id, worksp, csv_file_path, geoserver_host)
 
     # create this layer in geoserver
-    geo.create_featurestore(store_name, workspace=worksp, db='postgres', host=asgsdb.get_host(), port=asgsdb.get_port(), schema=table_name,
+    geo.create_featurestore(store_name, workspace=worksp, db=dbname, host=asgsdb.get_host(), port=asgsdb.get_port(), schema=table_name,
                         pg_user=asgsdb.get_user(), pg_password=asgsdb.get_password(), overwrite=False)
     # now publish this layer with a CQL filter based on instance_id
-    geo.publish_featurestore_withCQL(store_name, table_name, cql, workspace=worksp)
-
+    #geo.publish_featurestore_withCQL(store_name, table_name, cql, workspace=worksp)
+    geo.publish_featurestore(store_name, table_name, workspace=worksp)
 
 
 # copy all .png files to the geoserver host to serve them from there
