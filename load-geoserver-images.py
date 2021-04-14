@@ -3,7 +3,6 @@ import fnmatch
 import logging
 import psycopg2
 import csv
-import urllib.parse
 
 from geo.Geoserver import Geoserver
 from geoserver.catalog import Catalog
@@ -218,22 +217,23 @@ def add_props_datastore(logger, geo, instance_id, worksp, final_path, geoserver_
     store_name = str(instance_id) + "_station_props"
     dbname = "adcirc_obs"
     table_name = "stations"
-    cql = f"instanceid={instance_id}"
+
     logger.debug(f"csv_file_path: {csv_file_path} store name: {store_name}")
 
     # get asgs db connection
     asgsdb = asgsDB(logger, dbname)
-    # save to db
+    # save stationProps file to db
     asgsdb.insert_station_props(logger, geo, instance_id, worksp, csv_file_path, geoserver_host)
 
     # create this layer in geoserver
-    #geo.create_featurestore(store_name, workspace=worksp, db=dbname, host=asgsdb.get_host(), port=asgsdb.get_port(), schema=table_name,
-                        #pg_user=asgsdb.get_user(), pg_password=asgsdb.get_password(), overwrite=False)
+    geo.create_featurestore(store_name, workspace=worksp, db=dbname, host=asgsdb.get_host(), port=asgsdb.get_port(), schema=table_name,
+                            pg_user=asgsdb.get_user(), pg_password=asgsdb.get_password(), overwrite=False)
+
     # now publish this layer with an SQL filter based on instance_id
     sql = f"select * from stations where instanceid={instance_id}"
     name = f"{instance_id}_station_properies_view"
+    # TODO probably need to update this name
     title = "NOAA Observations"
-    #geo.publish_featurestore_withCQL(store_name, table_name, cql, workspace=worksp)
     geo.publish_featurestore_sqlview(name, title, store_name, sql, key_column='gid', geom_name='the_geom', geom_type='Geometry', workspace=worksp)
 
 
@@ -302,7 +302,7 @@ def main(args):
     geo = Geoserver(url, username=user, password=pswd)
 
     # create a new workspace in geoserver if it does not already exist
-    #add_workspace(logger, geo, worksp)
+    add_workspace(logger, geo, worksp)
 
     # final dir path needs to be well defined
     # dir structure looks like this: /data/<instance id>/mbtiles/<parameter name>.<zoom level>.mbtiles
@@ -310,13 +310,13 @@ def main(args):
     mbtiles_path = final_path + "/mbtiles"
 
     # add a coverage store to geoserver for each .mbtiles found in the staging dir
-    #add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_path)
+    add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_path)
 
     # now put NOAA OBS .csv file into geoserver
     add_props_datastore(logger, geo, instance_id, worksp, final_path, geoserver_host)
 
     # finally copy all .png files to the geoserver host to serve them from there
-    #copy_pngs(logger, geoserver_host, geoserver_vm_userid, geoserver_proj_path, instance_id, final_path)
+    copy_pngs(logger, geoserver_host, geoserver_vm_userid, geoserver_proj_path, instance_id, final_path)
 
 
 
