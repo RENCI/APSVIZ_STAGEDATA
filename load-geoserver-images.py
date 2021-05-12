@@ -29,7 +29,7 @@ class asgsDB:
         self.instance = instance_id
 
         # also save separate parts i.e. '2744' and '2021050618-namforecast'
-        parts = instance_id.split("-")
+        parts = instance_id.split("-", 1)
         if (len(parts) > 1):
             self.instance = parts[0]
             self.uid = parts[1]
@@ -222,7 +222,7 @@ def add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_pa
 
 # add a datastore in geoserver for the stationProps.csv file
 def add_props_datastore(logger, geo, instance_id, worksp, final_path, geoserver_host):
-    logging.info(f"Adding the station properties datastore for instance id: {instance_id}")
+    logger.info(f"Adding the station properties datastore for instance id: {instance_id}")
     # set up paths and datastore name
     # TODO put these in ENVs
     stations_filename = "stationProps.csv"
