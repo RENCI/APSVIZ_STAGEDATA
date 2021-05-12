@@ -10,7 +10,9 @@ from common.logging import LoggingUtil
 
 class asgsDB:
 
-    def __init__(self, logger, dbname):
+    # dbname looks like this: 'asgs_dashboard'
+    # instance_id looks like this: '2744-2021050618-namforecast'
+    def __init__(self, logger, dbname, instance_id):
         self.conn = None
         self.logger = logger
 
@@ -20,6 +22,17 @@ class asgsDB:
         self.port = os.getenv('ASGS_DB_PORT', '5432').strip()
         # self.db_name = os.getenv('ASGS_DB_DATABASE', 'asgs').strip()
         self.db_name = dbname
+
+        # save whole Id
+        self.instanceId = instance_id
+        self.uid = instance_id
+        self.instance = instance_id
+
+        # also save separate parts i.e. '2744' and '2021050618-namforecast'
+        parts = instance_id.split("-")
+        if len((parts) > 1):
+            self.instance = parts[0]
+            self.uid = parts[1]
 
         try:
             # connect to asgs database
@@ -52,8 +65,8 @@ class asgsDB:
 
 
     # given instance id - save geoserver url (to access this mbtiles layer) in the asgs database
-    def saveImageURL(self, instanceId, name, url):
-        self.logger.info(f'Updating DB record - instance id: {instanceId} with url: {url}')
+    def saveImageURL(self, name, url):
+        self.logger.info(f'Updating DB record - instance id: {self.instance}  uid: {self.uid} with url: {url}')
 
         # format of mbtiles is ex: maxele.63.0.9.mbtiles
         # final key value will be in this format image.maxele.63.0.9
@@ -63,8 +76,8 @@ class asgsDB:
         try:
             cursor = self.conn.cursor()
 
-            sql_stmt = 'INSERT INTO "ASGS_Mon_config_item" (key, value, instance_id) VALUES(%s, %s, %s)'
-            params = [f"'{key_name}'", f"'{key_value}'", instanceId]
+            sql_stmt = 'INSERT INTO "ASGS_Mon_config_item" (key, value, instance_id, uid) VALUES(%s, %s, %s, %s)'
+            params = [f"'{key_name}'", f"'{key_value}'", self.instance, f"'{self.uid}'"]
             self.logger.debug(f"sql statement is: {sql_stmt} params are: {params}")
 
             cursor.execute(sql_stmt, params)
@@ -75,21 +88,21 @@ class asgsDB:
     # need to retrieve some values - related to this run - from the ASGS DB
     # currently: Date, Cycle, Storm Name (if any), and Advisory (if any)
     # if more are needed, add to metadata_dict
-    def getRunMetadata(self, instanceId):
+    def getRunMetadata(self):
         metadata_dict = {
             'currentdate': '',
             'currentcycle': '',
             'advisory': '',
             'forcing.stormname': ''
         }
-        self.logger.info(f'Retrieving DB record metadata - instance id: {instanceId}')
+        self.logger.info(f'Retrieving DB record metadata - instance id: {self.instance} uid: {self.uid}')
 
         try:
             cursor = self.conn.cursor()
 
             for key in metadata_dict.keys():
-                sql_stmt = 'SELECT value FROM "ASGS_Mon_config_item" WHERE instance_id=%s AND key=%s'
-                params = [instanceId, key]
+                sql_stmt = 'SELECT value FROM "ASGS_Mon_config_item" WHERE instance_id=%s AND uid=%s AND key=%s'
+                params = [self.instance, self.uid, key]
                 self.logger.debug(f"sql statement is: {sql_stmt} params are: {params}")
                 cursor.execute(sql_stmt, params)
                 ret = cursor.fetchone()
@@ -104,7 +117,7 @@ class asgsDB:
 
     # find the stationProps.csv file and insert the contents
     # into the adcirc_obs db of the ASGS postgres instance
-    def insert_station_props(self, logger, geo, instance_id, worksp, csv_file_path, geoserver_host):
+    def insert_station_props(self, logger, geo, worksp, csv_file_path, geoserver_host):
         # where to find the stationProps.csv file
         logger.info(f"Saving {csv_file_path} to DB")
         logger.debug(f"DB name is: {self.get_dbname()}")
@@ -124,9 +137,9 @@ class asgsDB:
                 next(reader)  # Skip the header row.
                 for row in reader:
                     logger.debug(f"opened csv file - saving this row to db: {row}")
-                    png_url = f"https://{host}/obs_pngs/{instance_id}/{row[6]}"
-                    sql_stmt = "INSERT INTO stations (stationid, stationname, state, lat, lon, node, filename, the_geom, instanceid, imageurl) VALUES (%s, %s, %s, %s, %s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s),4326), %s, %s)"
-                    params = [row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[4], row[3], instance_id, png_url]
+                    png_url = f"https://{host}/obs_pngs/{self.instanceId}/{row[6]}"
+                    sql_stmt = "INSERT INTO stations (stationid, stationname, state, lat, lon, node, filename, the_geom, instance_id, imageurl) VALUES (%s, %s, %s, %s, %s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s),4326), %s, %s)"
+                    params = [row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[4], row[3], self.instanceId, png_url]
                     logger.debug(f"sql_stmt: {sql_stmt} params: {sql_stmt}")
                     cursor.execute(sql_stmt, params)
 
@@ -150,7 +163,7 @@ def update_layer_title(logger, geo, instance_id, worksp, layer_name):
     # first get metadata from this model run
     db_name = os.getenv('ASGS_DB_DATABASE', 'asgs').strip()
     asgsdb = asgsDB(logger, db_name)
-    meta_dict = asgsdb.getRunMetadata(instance_id)
+    meta_dict = asgsdb.getRunMetadata()
     raw_date = meta_dict['currentdate']
     if raw_date:
         # raw date format is YYMMDD
@@ -192,8 +205,8 @@ def add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_pa
         layer_url = f'{url}rest/workspaces/{worksp}/coveragestores/{layer_name}.json'
         logger.debug(f"Adding coverage store to DB, instanceId: {instance_id} coveragestore url: {layer_url}")
         db_name = os.getenv('ASGS_DB_DATABASE', 'asgs').strip()
-        asgsdb = asgsDB(logger, db_name)
-        asgsdb.saveImageURL(instance_id, file, layer_url)
+        asgsdb = asgsDB(logger, db_name, instance_id)
+        asgsdb.saveImageURL(file, layer_url)
 
 
 # add a datastore in geoserver for the stationProps.csv file
@@ -221,16 +234,16 @@ def add_props_datastore(logger, geo, instance_id, worksp, final_path, geoserver_
     logger.debug(f"csv_file_path: {csv_file_path} store name: {store_name}")
 
     # get asgs db connection
-    asgsdb = asgsDB(logger, dbname)
+    asgsdb = asgsDB(logger, dbname, instance_id)
     # save stationProps file to db
-    asgsdb.insert_station_props(logger, geo, instance_id, worksp, csv_file_path, geoserver_host)
+    asgsdb.insert_station_props(logger, geo, worksp, csv_file_path, geoserver_host)
 
     # create this layer in geoserver
     geo.create_featurestore(store_name, workspace=worksp, db=dbname, host=asgsdb.get_host(), port=asgsdb.get_port(), schema=table_name,
                             pg_user=asgsdb.get_user(), pg_password=asgsdb.get_password(), overwrite=False)
 
     # now publish this layer with an SQL filter based on instance_id
-    sql = f"select * from stations where instanceid={instance_id}"
+    sql = f"select * from stations where instance_id={instance_id}"
     name = f"{instance_id}_station_properies_view"
     # TODO probably need to update this name
     title = "NOAA Observations"
