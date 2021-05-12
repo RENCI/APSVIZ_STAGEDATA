@@ -162,7 +162,7 @@ def update_layer_title(logger, geo, instance_id, worksp, layer_name):
     run_date = ''
     # first get metadata from this model run
     db_name = os.getenv('ASGS_DB_DATABASE', 'asgs').strip()
-    asgsdb = asgsDB(logger, db_name)
+    asgsdb = asgsDB(logger, db_name, instance_id)
     meta_dict = asgsdb.getRunMetadata()
     raw_date = meta_dict['currentdate']
     if raw_date:
