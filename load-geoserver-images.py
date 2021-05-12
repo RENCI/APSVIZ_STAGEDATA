@@ -30,7 +30,7 @@ class asgsDB:
 
         # also save separate parts i.e. '2744' and '2021050618-namforecast'
         parts = instance_id.split("-")
-        if len((parts) > 1):
+        if (len(parts) > 1):
             self.instance = parts[0]
             self.uid = parts[1]
 
