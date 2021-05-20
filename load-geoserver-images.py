@@ -229,7 +229,7 @@ def add_props_datastore(logger, geo, instance_id, worksp, final_path, geoserver_
     # set up paths and datastore name
     # TODO put these in ENVs
     stations_filename = "stationProps.csv"
-    csv_file_path = f"{final_path}/adcirc-supp/insets/{stations_filename}"
+    csv_file_path = f"{final_path}/insets/{stations_filename}"
     store_name = str(instance_id) + "_station_props"
     dbname = "adcirc_obs"
     table_name = "stations"
@@ -256,7 +256,7 @@ def add_props_datastore(logger, geo, instance_id, worksp, final_path, geoserver_
 # copy all .png files to the geoserver host to serve them from there
 def copy_pngs(logger, geoserver_host, geoserver_vm_userid, geoserver_proj_path, instance_id, final_path):
 
-    from_path = f"{final_path}/adcirc-supp/insets/"
+    from_path = f"{final_path}/insets/"
     to_path = f"{geoserver_vm_userid}@{geoserver_host}:{geoserver_proj_path}/{instance_id}/"
     logger.info(f"Copying insets png files from: {from_path} to: {to_path}")
     # first create new directory if not already existing
