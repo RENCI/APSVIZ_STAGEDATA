@@ -153,12 +153,14 @@ class asgsDB:
 
  # create a new workspace in geoserver if it does not already exist
 def add_workspace(logger, geo, worksp):
+    logger.info(f"workspace: {worksp}")
     if (geo.get_workspace(worksp) is None):
         geo.create_workspace(workspace=worksp)
 
 
 # tweak the layer title to make it more readable in Terria Map
 def update_layer_title(logger, geo, instance_id, worksp, layer_name):
+    logger.info(f"instance_id: {instance_id} layer_name: {layer_name}")
     run_date = ''
     # first get metadata from this model run
     db_name = os.getenv('ASGS_DB_DATABASE', 'asgs').strip()
@@ -181,6 +183,7 @@ def add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_pa
     # format of mbtiles is ex: maxele.63.0.9.mbtiles
     # pull out meaningful pieces of file name
     # get all files in mbtiles dir and loop through
+    logger.info(f"instance_id: {instance_id} mbtiles_path: {mbtiles_path}")
     for file in fnmatch.filter(os.listdir(mbtiles_path), '*.mbtiles'):
         file_path = f"{mbtiles_path}/{file}"
         logger.debug(f"add_mbtiles_coveragestores: file={file_path}")
@@ -319,7 +322,7 @@ def main(args):
 
     # final dir path needs to be well defined
     # dir structure looks like this: /data/<instance id>/mbtiles/<parameter name>.<zoom level>.mbtiles
-    final_path = "/data/" + instance_id
+    final_path = "/data/" + instance_id + "/final"
     mbtiles_path = final_path + "/mbtiles"
 
     # add a coverage store to geoserver for each .mbtiles found in the staging dir
