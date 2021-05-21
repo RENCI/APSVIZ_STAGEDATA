@@ -173,7 +173,7 @@ def update_layer_title(logger, geo, instance_id, worksp, layer_name):
         if len(date_list) == 3:
             run_date = f"{date_list[1]}-{date_list[2]}-20{date_list[0]}"
 
-    title = f"Date: {run_date} Cycle: {meta_dict['currentcycle']} Storm Name: {meta_dict['forcing.stormname']} Advisory:{meta_dict['advisory']}"
+    title = f"Date: {run_date} Cycle: {meta_dict['currentcycle']} Storm Name: {meta_dict['forcing.stormname']} Advisory:{meta_dict['advisory']} ({layer_name.split('_')[1]})"
     logger.debug(f"setting this coverage: {layer_name} to {title}")
     geo.set_coverage_title(worksp, layer_name, layer_name, title)
 
@@ -246,7 +246,7 @@ def add_props_datastore(logger, geo, instance_id, worksp, final_path, geoserver_
                             pg_user=asgsdb.get_user(), pg_password=asgsdb.get_password(), overwrite=False)
 
     # now publish this layer with an SQL filter based on instance_id
-    sql = f"select * from stations where instance_id={instance_id}"
+    sql = f"select * from stations where instance_id='{instance_id}'"
     name = f"{instance_id}_station_properies_view"
     # TODO probably need to update this name
     title = "NOAA Observations"
