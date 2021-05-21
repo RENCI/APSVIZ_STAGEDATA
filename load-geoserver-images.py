@@ -77,7 +77,7 @@ class asgsDB:
             cursor = self.conn.cursor()
 
             sql_stmt = 'INSERT INTO "ASGS_Mon_config_item" (key, value, instance_id, uid) VALUES(%s, %s, %s, %s)'
-            params = [f"'{key_name}'", f"'{key_value}'", self.instance, f"'{self.uid}'"]
+            params = [f"{key_name}", f"{key_value}", self.instance, f"{self.uid}"]
             self.logger.debug(f"sql statement is: {sql_stmt} params are: {params}")
 
             cursor.execute(sql_stmt, params)
@@ -93,7 +93,8 @@ class asgsDB:
             'currentdate': '',
             'currentcycle': '',
             'advisory': '',
-            'forcing.stormname': ''
+            'forcing.stormname': '',
+            'ADCIRCgrid': ''
         }
         self.logger.info(f'Retrieving DB record metadata - instance id: {self.instance} uid: {self.uid}')
 
@@ -173,7 +174,7 @@ def update_layer_title(logger, geo, instance_id, worksp, layer_name):
         if len(date_list) == 3:
             run_date = f"{date_list[1]}-{date_list[2]}-20{date_list[0]}"
 
-    title = f"Date: {run_date} Cycle: {meta_dict['currentcycle']} Storm Name: {meta_dict['forcing.stormname']} Advisory:{meta_dict['advisory']} ({layer_name.split('_')[1]})"
+    title = f"Date: {run_date} Cycle: {meta_dict['currentcycle']} Storm Name: {meta_dict['forcing.stormname']} Advisory:{meta_dict['advisory']} ADCIRC Grid: {meta_dict['ADCIRCgrid']} ({layer_name.split('_')[1]})"
     logger.debug(f"setting this coverage: {layer_name} to {title}")
     geo.set_coverage_title(worksp, layer_name, layer_name, title)
 
@@ -248,8 +249,19 @@ def add_props_datastore(logger, geo, instance_id, worksp, final_path, geoserver_
     # now publish this layer with an SQL filter based on instance_id
     sql = f"select * from stations where instance_id='{instance_id}'"
     name = f"{instance_id}_station_properies_view"
-    # TODO probably need to update this name
-    title = "NOAA Observations"
+
+    # TODO probably need to update this name - 5/21/21 - okay updated ...
+    #  but maybe need to make this a little less messy
+    db_name = os.getenv('ASGS_DB_DATABASE', 'asgs').strip()
+    asgsdb = asgsDB(logger, db_name, instance_id)
+    meta_dict = asgsdb.getRunMetadata()
+    raw_date = meta_dict['currentdate']
+    if raw_date:
+        # raw date format is YYMMDD
+        date_list = [raw_date[i:i + 2] for i in range(0, len(raw_date), 2)]
+        if len(date_list) == 3:
+            run_date = f"{date_list[1]}-{date_list[2]}-20{date_list[0]}"
+    title = f"NOAA Observations - Date: {run_date} Cycle: {meta_dict['currentcycle']} ADCIRC Grid: {meta_dict['ADCIRCgrid']}"
     geo.publish_featurestore_sqlview(name, title, store_name, sql, key_column='gid', geom_name='the_geom', geom_type='Geometry', workspace=worksp)
 
 
