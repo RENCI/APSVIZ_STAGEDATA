@@ -40,13 +40,24 @@ class asgsDB:
 
             self.conn = psycopg2.connect(conn_str)
             self.conn.set_session(autocommit=True)
+            self.cursor = self.conn.cursor()
         except:
             e = sys.exc_info()[0]
             self.logger.error(f"FAILURE - Cannot connect to ASGS_DB. error {e}")
 
     def __del__(self):
-        if (self.conn):
-            self.conn.close()
+        """
+            close up the DB
+            :return:
+        """
+        try:
+            if self.cursor is not None:
+                self.cursor.close()
+            if self.conn is not None:
+                self.conn.close()
+        except Exception as e:
+            self.logger.error(f'Error detected closing cursor or connection. {e}')
+            sys.exc_info()[0]
 
     def get_user(self):
         return self.user
@@ -74,13 +85,11 @@ class asgsDB:
         key_value = url
 
         try:
-            cursor = self.conn.cursor()
-
             sql_stmt = 'INSERT INTO "ASGS_Mon_config_item" (key, value, instance_id, uid) VALUES(%s, %s, %s, %s)'
             params = [f"{key_name}", f"{key_value}", self.instance, f"{self.uid}"]
             self.logger.debug(f"sql statement is: {sql_stmt} params are: {params}")
 
-            cursor.execute(sql_stmt, params)
+            self.cursor.execute(sql_stmt, params)
         except:
             e = sys.exc_info()[0]
             self.logger.error(f"FAILURE - Cannot update ASGS_DB. error {e}")
@@ -99,14 +108,12 @@ class asgsDB:
         self.logger.info(f'Retrieving DB record metadata - instance id: {self.instance} uid: {self.uid}')
 
         try:
-            cursor = self.conn.cursor()
-
             for key in metadata_dict.keys():
                 sql_stmt = 'SELECT value FROM "ASGS_Mon_config_item" WHERE instance_id=%s AND uid=%s AND key=%s'
                 params = [self.instance, self.uid, key]
                 self.logger.debug(f"sql statement is: {sql_stmt} params are: {params}")
-                cursor.execute(sql_stmt, params)
-                ret = cursor.fetchone()
+                self.cursor.execute(sql_stmt, params)
+                ret = self.cursor.fetchone()
                 if ret:
                     self.logger.debug(f"value returned is: {ret}")
                     metadata_dict[key] = ret[0]
@@ -122,8 +129,6 @@ class asgsDB:
         # where to find the stationProps.csv file
         logger.info(f"Saving {csv_file_path} to DB")
         logger.debug(f"DB name is: {self.get_dbname()}")
-
-        cursor = self.conn.cursor()
 
         # need to remove the .edc from the geoserver_host for now
         host = geoserver_host.replace('.edc', '')
@@ -142,7 +147,7 @@ class asgsDB:
                     sql_stmt = "INSERT INTO stations (stationid, stationname, state, lat, lon, node, filename, the_geom, instance_id, imageurl) VALUES (%s, %s, %s, %s, %s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s),4326), %s, %s)"
                     params = [row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[4], row[3], self.instanceId, png_url]
                     logger.debug(f"sql_stmt: {sql_stmt} params: {sql_stmt}")
-                    cursor.execute(sql_stmt, params)
+                    self.cursor.execute(sql_stmt, params)
 
             self.conn.commit()
         except:
