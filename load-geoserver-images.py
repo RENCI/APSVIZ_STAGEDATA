@@ -243,13 +243,13 @@ def add_props_datastore(logger, geo, instance_id, worksp, final_path, geoserver_
     logger.debug(f"csv_file_path: {csv_file_path} store name: {store_name}")
 
     # get asgs db connection
-    asgsdb = asgsDB(logger, dbname, instance_id)
+    asgs_obsdb = asgsDB(logger, dbname, instance_id)
     # save stationProps file to db
-    asgsdb.insert_station_props(logger, geo, worksp, csv_file_path, geoserver_host)
+    asgs_obsdb.insert_station_props(logger, geo, worksp, csv_file_path, geoserver_host)
 
     # create this layer in geoserver
-    geo.create_featurestore(store_name, workspace=worksp, db=dbname, host=asgsdb.get_host(), port=asgsdb.get_port(), schema=table_name,
-                            pg_user=asgsdb.get_user(), pg_password=asgsdb.get_password(), overwrite=False)
+    geo.create_featurestore(store_name, workspace=worksp, db=dbname, host=asgs_obsdb.get_host(), port=asgs_obsdb.get_port(), schema=table_name,
+                            pg_user=asgs_obsdb.get_user(), pg_password=asgs_obsdb.get_password(), overwrite=False)
 
     # now publish this layer with an SQL filter based on instance_id
     sql = f"select * from stations where instance_id='{instance_id}'"
