@@ -76,7 +76,8 @@ def main(args):
 
     logger.info('Removing dir: {}'.format(dir_to_remove))
     try:
-        shutil.rmtree(dir_to_remove)
+        if os.path.isdir(dir_to_remove):
+            shutil.rmtree(dir_to_remove)
     except OSError as e:
         print("Error: %s : %s" % (dir_to_remove, e.strerror))
 
