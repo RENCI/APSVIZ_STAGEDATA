@@ -382,10 +382,6 @@ def main(args):
     tc.update_layers(final_layergrp)
 
 
-
-
-
-
 if __name__ == '__main__':
     from argparse import ArgumentParser
     parser = ArgumentParser(description=main.__doc__)
