@@ -7,6 +7,8 @@ import csv
 from geo.Geoserver import Geoserver
 from geoserver.catalog import Catalog
 from common.logging import LoggingUtil
+from urllib.parse import urlparse
+from terria_catalog import TerriaCatalog
 
 class asgsDB:
 
@@ -183,9 +185,11 @@ def update_layer_title(logger, geo, instance_id, worksp, layer_name):
     logger.debug(f"setting this coverage: {layer_name} to {title}")
     geo.set_coverage_title(worksp, layer_name, layer_name, title)
 
+    return title
+
 
 # add a coverage store to geoserver for each .mbtiles found in the staging dir
-def add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_path):
+def add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_path, layergrp):
     # format of mbtiles is ex: maxele.63.0.9.mbtiles
     # pull out meaningful pieces of file name
     # get all files in mbtiles dir and loop through
@@ -208,7 +212,7 @@ def add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_pa
 
         # now we just need to tweak the layer title to make it more
         # readable in Terria Map
-        update_layer_title(logger, geo, instance_id, worksp, layer_name)
+        title = update_layer_title(logger, geo, instance_id, worksp, layer_name)
 
         # update DB with url of layer for access from website NEED INSTANCE ID for this
         layer_url = f'{url}rest/workspaces/{worksp}/coveragestores/{layer_name}.json'
@@ -216,6 +220,12 @@ def add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_pa
         db_name = os.getenv('ASGS_DB_DATABASE', 'asgs').strip()
         asgsdb = asgsDB(logger, db_name, instance_id)
         asgsdb.saveImageURL(file, layer_url)
+
+        # add this layer to the wms layer group dict
+        full_layername = f"{worksp}:{layer_name}"
+        layergrp["wms"].append({"title": title, "layername": full_layername})
+        return layergrp
+
 
 
 # add a datastore in geoserver for the stationProps.csv file
@@ -230,7 +240,7 @@ def add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_pa
 
 
 # add a datastore in geoserver for the stationProps.csv file
-def add_props_datastore(logger, geo, instance_id, worksp, final_path, geoserver_host):
+def add_props_datastore(logger, geo, instance_id, worksp, final_path, geoserver_host, layergrp):
     logger.info(f"Adding the station properties datastore for instance id: {instance_id}")
     # set up paths and datastore name
     # TODO put these in ENVs
@@ -269,6 +279,11 @@ def add_props_datastore(logger, geo, instance_id, worksp, final_path, geoserver_
     title = f"NOAA Observations - Date: {run_date} Cycle: {meta_dict['currentcycle']} ADCIRC Grid: {meta_dict['ADCIRCgrid']}"
     geo.publish_featurestore_sqlview(name, title, store_name, sql, key_column='gid', geom_name='the_geom', geom_type='Geometry', workspace=worksp)
 
+    # # add this layer to the wfs layer group dict
+    full_layername = f"{worksp}:{name}"
+    layergrp["wfs"].append({"title": title, "layername": full_layername})
+    return layergrp
+
 
 # copy all .png files to the geoserver host to serve them from there
 def copy_pngs(logger, geoserver_host, geoserver_vm_userid, geoserver_proj_path, instance_id, final_path):
@@ -301,6 +316,13 @@ def copy_pngs(logger, geoserver_host, geoserver_vm_userid, geoserver_proj_path, 
 
 def main(args):
     # logging.basicConfig(filename='stage-data-load-images.log',format='%(asctime)s : %(levelname)s : %(funcName)s : %(module)s : %(name)s : %(message)s', level=logging.DEBUG)
+
+    # define dict to hold all of the layers created in this run
+    # arrays contain sub-dicts like this: {"title": "", "layername": ""}
+    layergrp = {
+                 "wms": [],
+                 "wfs": []
+               }
 
     # get the log level and directory from the environment
     log_level: int = int(os.getenv('LOG_LEVEL', logging.INFO))
@@ -341,15 +363,26 @@ def main(args):
     # dir structure looks like this: /data/<instance id>/mbtiles/<parameter name>.<zoom level>.mbtiles
     final_path = "/data/" + instance_id + "/final"
     mbtiles_path = final_path + "/mbtiles"
+    tiff_path = final_path + "/tiff"
 
     # add a coverage store to geoserver for each .mbtiles found in the staging dir
-    add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_path)
+    new_layergrp = add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_path, layergrp)
 
     # now put NOAA OBS .csv file into geoserver
-    add_props_datastore(logger, geo, instance_id, worksp, final_path, geoserver_host)
+    final_layergrp = add_props_datastore(logger, geo, url, instance_id, worksp, final_path, geoserver_host, new_layergrp)
 
     # finally copy all .png files to the geoserver host to serve them from there
     copy_pngs(logger, geoserver_host, geoserver_vm_userid, geoserver_proj_path, instance_id, final_path)
+
+    # update TerriaMap data catalog
+    # build url to find existing apsviz.json file
+    url_parts = urlparse(url)
+    cat_url = f"{url_parts.scheme}//{url_parts.hostname}/obs_pngs/apsviz.json"
+    tc = TerriaCatalog(cat_url, user, pswd)
+    tc.update_layers(final_layergrp)
+
+
+
 
 
 
