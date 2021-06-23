@@ -376,10 +376,10 @@ def main(args):
 
     # update TerriaMap data catalog
     # build url to find existing apsviz.json file
-    url_parts = urlparse(url)
-    cat_url = f"{url_parts.scheme}//{url_parts.hostname}/obs_pngs/apsviz.json"
-    tc = TerriaCatalog(cat_url, user, pswd)
-    tc.update_layers(final_layergrp)
+    #url_parts = urlparse(url)
+    #cat_url = f"{url_parts.scheme}//{url_parts.hostname}/obs_pngs/apsviz.json"
+    #tc = TerriaCatalog(cat_url, user, pswd)
+    #tc.update_layers(final_layergrp)
 
 
 if __name__ == '__main__':
