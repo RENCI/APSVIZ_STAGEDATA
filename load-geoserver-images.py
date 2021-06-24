@@ -203,6 +203,7 @@ def add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_pa
         # create coverage store and associate with .mbtiles file
         # also creates layer
         fmt = f"mbtiles?configure=first&coverageName={layer_name}"
+        #ret = 0
         ret = geo.create_coveragestore(lyr_name=layer_name,
                                        path=file_path,
                                        workspace=worksp,
