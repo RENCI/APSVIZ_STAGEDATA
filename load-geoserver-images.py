@@ -356,7 +356,7 @@ def main(args):
 
     logger.info(f"Connecting to GeoServer at host: {url}")
     # create a GeoServer connection
-    #geo = Geoserver(url, username=user, password=pswd)
+    geo = Geoserver(url, username=user, password=pswd)
 
     # create a new workspace in geoserver if it does not already exist
     #add_workspace(logger, geo, worksp)
