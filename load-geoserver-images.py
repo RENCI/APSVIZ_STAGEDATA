@@ -183,7 +183,7 @@ def update_layer_title(logger, geo, instance_id, worksp, layer_name):
 
     title = f"Date: {run_date} Cycle: {meta_dict['currentcycle']} Storm Name: {meta_dict['forcing.stormname']} Advisory:{meta_dict['advisory']} ADCIRC Grid: {meta_dict['ADCIRCgrid']} ({layer_name.split('_')[1]})"
     logger.debug(f"setting this coverage: {layer_name} to {title}")
-    geo.set_coverage_title(worksp, layer_name, layer_name, title)
+    #geo.set_coverage_title(worksp, layer_name, layer_name, title)
 
     return title
 
@@ -203,12 +203,12 @@ def add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_pa
         # create coverage store and associate with .mbtiles file
         # also creates layer
         fmt = f"mbtiles?configure=first&coverageName={layer_name}"
-        #ret = 0
-        ret = geo.create_coveragestore(lyr_name=layer_name,
-                                       path=file_path,
-                                       workspace=worksp,
-                                       file_type=fmt,
-                                       content_type='application/vnd.sqlite3')
+        ret = 0
+        #ret = geo.create_coveragestore(lyr_name=layer_name,
+                                       #path=file_path,
+                                       #workspace=worksp,
+                                       #file_type=fmt,
+                                       #content_type='application/vnd.sqlite3')
         logger.debug(f"Attempted to add coverage store, file path: {file_path}  return value: {ret}")
 
         # now we just need to tweak the layer title to make it more
@@ -218,9 +218,9 @@ def add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_pa
         # update DB with url of layer for access from website NEED INSTANCE ID for this
         layer_url = f'{url}rest/workspaces/{worksp}/coveragestores/{layer_name}.json'
         logger.debug(f"Adding coverage store to DB, instanceId: {instance_id} coveragestore url: {layer_url}")
-        db_name = os.getenv('ASGS_DB_DATABASE', 'asgs').strip()
-        asgsdb = asgsDB(logger, db_name, instance_id)
-        asgsdb.saveImageURL(file, layer_url)
+        #db_name = os.getenv('ASGS_DB_DATABASE', 'asgs').strip()
+        #asgsdb = asgsDB(logger, db_name, instance_id)
+        #asgsdb.saveImageURL(file, layer_url)
 
         # add this layer to the wms layer group dict
         full_layername = f"{worksp}:{layer_name}"
@@ -257,11 +257,11 @@ def add_props_datastore(logger, geo, instance_id, worksp, final_path, geoserver_
     # get asgs db connection
     asgs_obsdb = asgsDB(logger, dbname, instance_id)
     # save stationProps file to db
-    asgs_obsdb.insert_station_props(logger, geo, worksp, csv_file_path, geoserver_host)
+    #asgs_obsdb.insert_station_props(logger, geo, worksp, csv_file_path, geoserver_host)
 
     # create this layer in geoserver
-    geo.create_featurestore(store_name, workspace=worksp, db=dbname, host=asgs_obsdb.get_host(), port=asgs_obsdb.get_port(), schema=table_name,
-                            pg_user=asgs_obsdb.get_user(), pg_password=asgs_obsdb.get_password(), overwrite=False)
+    #geo.create_featurestore(store_name, workspace=worksp, db=dbname, host=asgs_obsdb.get_host(), port=asgs_obsdb.get_port(), schema=table_name,
+                            #pg_user=asgs_obsdb.get_user(), pg_password=asgs_obsdb.get_password(), overwrite=False)
 
     # now publish this layer with an SQL filter based on instance_id
     sql = f"select * from stations where instance_id='{instance_id}'"
@@ -279,7 +279,7 @@ def add_props_datastore(logger, geo, instance_id, worksp, final_path, geoserver_
         if len(date_list) == 3:
             run_date = f"{date_list[1]}-{date_list[2]}-20{date_list[0]}"
     title = f"NOAA Observations - Date: {run_date} Cycle: {meta_dict['currentcycle']} ADCIRC Grid: {meta_dict['ADCIRCgrid']}"
-    geo.publish_featurestore_sqlview(name, title, store_name, sql, key_column='gid', geom_name='the_geom', geom_type='Geometry', workspace=worksp)
+    #geo.publish_featurestore_sqlview(name, title, store_name, sql, key_column='gid', geom_name='the_geom', geom_type='Geometry', workspace=worksp)
 
     # # add this layer to the wfs layer group dict
     full_layername = f"{worksp}:{name}"
@@ -356,10 +356,10 @@ def main(args):
 
     logger.info(f"Connecting to GeoServer at host: {url}")
     # create a GeoServer connection
-    geo = Geoserver(url, username=user, password=pswd)
+    #geo = Geoserver(url, username=user, password=pswd)
 
     # create a new workspace in geoserver if it does not already exist
-    add_workspace(logger, geo, worksp)
+    #add_workspace(logger, geo, worksp)
 
     # final dir path needs to be well defined
     # dir structure looks like this: /data/<instance id>/mbtiles/<parameter name>.<zoom level>.mbtiles
@@ -371,17 +371,17 @@ def main(args):
     new_layergrp = add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_path, layergrp)
 
     # now put NOAA OBS .csv file into geoserver
-    #final_layergrp = add_props_datastore(logger, geo, instance_id, worksp, final_path, geoserver_host, new_layergrp)
+    final_layergrp = add_props_datastore(logger, geo, instance_id, worksp, final_path, geoserver_host, new_layergrp)
 
     # finally copy all .png files to the geoserver host to serve them from there
     #copy_pngs(logger, geoserver_host, geoserver_vm_userid, geoserver_proj_path, instance_id, final_path)
 
     # update TerriaMap data catalog
     # build url to find existing apsviz.json file
-    #url_parts = urlparse(url)
-    #cat_url = f"{url_parts.scheme}//{url_parts.hostname}/obs_pngs/apsviz.json"
-    #tc = TerriaCatalog(cat_url, user, pswd)
-    #tc.update_layers(final_layergrp)
+    url_parts = urlparse(url)
+    cat_url = f"{url_parts.scheme}//{url_parts.hostname}/obs_pngs/apsviz.json"
+    tc = TerriaCatalog(cat_url, user, pswd)
+    tc.update_layers(final_layergrp)
 
 
 if __name__ == '__main__':
