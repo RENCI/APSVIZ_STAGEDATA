@@ -1,6 +1,8 @@
 from urllib.request import urlopen
 from urllib.parse import urlparse
+from common.logging import LoggingUtil
 from enum import Enum
+import logging
 import json
 import os
 
@@ -85,26 +87,40 @@ class TerriaCatalog:
 
     def __init__(self, cat_url, userid, userpw):
 
-       self.cat_url = cat_url
-       self.userid = userid
-       self.userpw = userpw
-       # load test json as default
-       self.cat_json = json.loads(self.test_cat)
+        # get the log level and directory from the environment
+        log_level: int = int(os.getenv('LOG_LEVEL', logging.INFO))
+        log_path: str = os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs'))
 
-       # get json from url, if exists
-       if(cat_url is not None):
-           # store the response of URL
-           response = urlopen(cat_url)
+        # create the dir if it does not exist
+        if not os.path.exists(log_path):
+           os.mkdir(log_path)
 
-           # storing the JSON response from url in data
-           self.cat_json = json.loads(response.read())
+        # create a logger
+        self.logger = LoggingUtil.init_logging("APSVIZ.load-geoserver-images", level=log_level, line_format='medium',
+                                          log_file_path=log_path)
+
+        self.cat_url = cat_url
+        self.userid = userid
+        self.userpw = userpw
+        # load test json as default
+        self.cat_json = json.loads(self.test_cat)
+
+        self.logger.info(f'cat_url: {cat_url}')
+        # get json from url, if exists
+        if(cat_url is not None):
+            # store the response of URL
+            response = urlopen(cat_url)
+            self.logger.info(f'read response: {response}')
+
+            # storing the JSON response from url in data
+            self.cat_json = json.loads(response.read())
 
 
     # overwrite current catalog items with latest
     # only two ever exists in this group - latest maxele and noaa obs
     def update_latest_results(self, latest_layers):
 
-        cat_item_list = self.cat_json['catalog'][CatalogGroup.CURRENT]['items']
+        cat_item_list = self.cat_json['catalog'][CatalogGroup.CURRENT.value]['items']
         # find the wms and wfs items in this list - should only be one of each
         item_idx = 0
         for item in cat_item_list:
@@ -117,7 +133,7 @@ class TerriaCatalog:
             item_idx += 1
 
         # put this item list back in main catalog
-        self.cat_json['catalog'][CatalogGroup.CURRENT]['items'] = cat_item_list
+        self.cat_json['catalog'][CatalogGroup.CURRENT.value]['items'] = cat_item_list
 
     # no group handling features for now
     # items is a list
@@ -183,7 +199,7 @@ class TerriaCatalog:
     def rm_oldest_recent_items(self):
 
         # get item list for this group
-        cat_item_list = self.cat_json['catalog'][CatalogGroup.RECENT]['items']
+        cat_item_list = self.cat_json['catalog'][CatalogGroup.RECENT.value]['items']
 
         # remove last 4 items in the list
         num_items = 0
@@ -194,7 +210,7 @@ class TerriaCatalog:
                 break
 
         # put this item list back into main catalog
-        self.cat_json['catalog'][CatalogGroup.RECENT]['items'] = cat_item_list
+        self.cat_json['catalog'][CatalogGroup.RECENT.value]['items'] = cat_item_list
 
 
     # put the newest items at the top and only show the last 5 runs
@@ -212,12 +228,12 @@ class TerriaCatalog:
                     data_custodian="RENCI"):
 
         # add this item to the CURRENT group in the catalog
-        cat_item_list = self.cat_json['catalog'][CatalogGroup.CURRENT]['items']
+        cat_item_list = self.cat_json['catalog'][CatalogGroup.CURRENT.value]['items']
         wms_item = self.create_wms_data_item(name, layers, enabled, shown, legend_visible, url, description, data_custodian)
         cat_item_list.insert(0, wms_item)
 
         # put this item list back into main catalog
-        self.cat_json['catalog'][CatalogGroup.CURRENT]['items'] = cat_item_list
+        self.cat_json['catalog'][CatalogGroup.CURRENT.value]['items'] = cat_item_list
 
 
     # put the newest items at the top and only show the last 5 runs - not possible?
@@ -234,12 +250,12 @@ class TerriaCatalog:
                     dataCustodian="RENCI",
                     featureInfoTemplate="<div class=’stations’><figure><img src={{imageurl}}><figcaption>{{stationname}}</figcaption></figure></div>"):
 
-        cat_item_list = self.cat_json['catalog'][CatalogGroup.CURRENT]['items']
+        cat_item_list = self.cat_json['catalog'][CatalogGroup.CURRENT.value]['items']
         wfs_item = self.create_wfs_data_item(name, typeNames, enabled, shown, legend_visible, url, type, description, dataCustodian, featureInfoTemplate)
         cat_item_list.insert(0, wfs_item)
 
         # put this item list back into main catalog
-        self.cat_json['catalog'][CatalogGroup.CURRENT]['items'] = cat_item_list
+        self.cat_json['catalog'][CatalogGroup.CURRENT.value]['items'] = cat_item_list
 
 
     # update the TerriaMap data catalog with a list of wms and wfs layers
@@ -259,7 +275,7 @@ class TerriaCatalog:
             latest_layers["wfs_title"] = wfs_layer_dict["title"]
             latest_layers["wfs_layer"] = wfs_layer_dict["layername"]
 
-        self.update_latest_results(self, latest_layers)
+        self.update_latest_results(latest_layers)
 
         # now delete the oldest entries in the CURRENT group
         self.rm_oldest_recent_items()
