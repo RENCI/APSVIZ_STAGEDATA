@@ -181,7 +181,8 @@ def update_layer_title(logger, geo, instance_id, worksp, layer_name):
         date_list = [raw_date[i:i+2] for i in range(0, len(raw_date), 2)]
         if len(date_list) == 3:
             run_date = f"{date_list[1]}-{date_list[2]}-20{date_list[0]}"
-    title="N/A"
+
+    title = "N/A"
     if (meta_dict['forcing.stormname'] == 'NA'):
         title = f"Date: {run_date} Cycle: {meta_dict['currentcycle']} Storm Name: {meta_dict['asgs.enstorm']} ADCIRC Grid: {meta_dict['ADCIRCgrid']} ({layer_name.split('_')[1]})"
     else:
@@ -282,7 +283,10 @@ def add_props_datastore(logger, geo, instance_id, worksp, final_path, geoserver_
         date_list = [raw_date[i:i + 2] for i in range(0, len(raw_date), 2)]
         if len(date_list) == 3:
             run_date = f"{date_list[1]}-{date_list[2]}-20{date_list[0]}"
-    title = f"NOAA Observations - Date: {run_date} Cycle: {meta_dict['currentcycle']} ADCIRC Grid: {meta_dict['ADCIRCgrid']}"
+    if (meta_dict['forcing.stormname'] == 'NA'):
+        title = f"NOAA Observations - Date: {run_date} Cycle: {meta_dict['currentcycle']} Storm Name: {meta_dict['asgs.enstorm']} ADCIRC Grid: {meta_dict['ADCIRCgrid']}"
+    else:
+        title = f"NOAA Observations - Date: {run_date} Cycle: {meta_dict['currentcycle']} Storm Name: {meta_dict['forcing.stormname']}:{meta_dict['asgs.enstorm']} Advisory:{meta_dict['advisory']} ADCIRC Grid: {meta_dict['ADCIRCgrid']}"
     geo.publish_featurestore_sqlview(name, title, store_name, sql, key_column='gid', geom_name='the_geom', geom_type='Geometry', workspace=worksp)
 
     # add this layer to the wfs layer group dict
@@ -380,10 +384,10 @@ def main(args):
 
     # update TerriaMap data catalog
     # build url to find existing apsviz.json file
-    #url_parts = urlparse(url)
-    #cat_url = f"{url_parts.scheme}://{url_parts.hostname}/obs_pngs/apsviz.json"
-    #tc = TerriaCatalog(cat_url, os.getenv('GEOSERVER_VM_USER', 'user').strip(), pswd)
-    #tc.update(final_layergrp)
+    url_parts = urlparse(url)
+    cat_url = f"{url_parts.scheme}://{url_parts.hostname}/obs_pngs/apsviz.json"
+    tc = TerriaCatalog(cat_url, geoserver_host, geoserver_vm_userid, pswd)
+    tc.update(final_layergrp)
 
 
 if __name__ == '__main__':

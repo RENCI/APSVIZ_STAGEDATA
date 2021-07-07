@@ -19,6 +19,8 @@ class CatalogGroup(Enum):
 
 class TerriaCatalog:
 
+    cat_save_path = "/projects/ees/APSViz"
+
     current_name = "ADCIRC Data - Current"
     recent_name = "ADCIRC Data - Recent"
     archive_name = "ADCIRC Data - Archive"
@@ -85,7 +87,7 @@ class TerriaCatalog:
              '"featureInfoTemplate": "<div class=’stations’><figure><img src={{imageurl}}><figcaption>{{stationname}}</figcaption></figure></div>"' \
     '}'
 
-    def __init__(self, cat_url, userid, userpw):
+    def __init__(self, cat_url, host, userid, userpw):
 
         # get the log level and directory from the environment
         log_level: int = int(os.getenv('LOG_LEVEL', logging.INFO))
@@ -100,6 +102,7 @@ class TerriaCatalog:
                                           log_file_path=log_path)
 
         self.cat_url = cat_url
+        self.host = host
         self.userid = userid
         self.userpw = userpw
         # load test json as default
@@ -230,12 +233,12 @@ class TerriaCatalog:
                     data_custodian="RENCI"):
 
         # add this item to the CURRENT group in the catalog
-        cat_item_list = self.cat_json['catalog'][CatalogGroup.CURRENT.value]['items']
+        cat_item_list = self.cat_json['catalog'][CatalogGroup.RECENT.value]['items']
         wms_item = self.create_wms_data_item(name, layers, enabled, shown, legend_visible, url, description, data_custodian)
         cat_item_list.insert(0, wms_item)
 
         # put this item list back into main catalog
-        self.cat_json['catalog'][CatalogGroup.CURRENT.value]['items'] = cat_item_list
+        self.cat_json['catalog'][CatalogGroup.RECENT.value]['items'] = cat_item_list
 
 
     # put the newest items at the top and only show the last 5 runs - not possible?
@@ -252,12 +255,12 @@ class TerriaCatalog:
                     dataCustodian="RENCI",
                     featureInfoTemplate="<div class=’stations’><figure><img src={{imageurl}}><figcaption>{{stationname}}</figcaption></figure></div>"):
 
-        cat_item_list = self.cat_json['catalog'][CatalogGroup.CURRENT.value]['items']
+        cat_item_list = self.cat_json['catalog'][CatalogGroup.RECENT.value]['items']
         wfs_item = self.create_wfs_data_item(name, typeNames, enabled, shown, legend_visible, url, type, description, dataCustodian, featureInfoTemplate)
         cat_item_list.insert(0, wfs_item)
 
         # put this item list back into main catalog
-        self.cat_json['catalog'][CatalogGroup.CURRENT.value]['items'] = cat_item_list
+        self.cat_json['catalog'][CatalogGroup.RECENT.value]['items'] = cat_item_list
 
 
     # update the TerriaMap data catalog with a list of wms and wfs layers
@@ -273,7 +276,6 @@ class TerriaCatalog:
             if ("maxele" in wms_layer_dict["layername"]):
                 latest_layers["wms_title"] = wms_layer_dict["title"]
                 latest_layers["wms_layer"] = wms_layer_dict["layername"]
-                break
 
         for wfs_layer_dict in layergrp["wfs"]:
             self.add_wfs_item(wfs_layer_dict["title"], wfs_layer_dict["layername"])
@@ -299,9 +301,10 @@ class TerriaCatalog:
             json.dump(self.cat_json, f)
 
         url_parts = urlparse(self.cat_url)
-        to_host = url_parts.hostname
-        to_path = url_parts.path
+        to_host = self.host
+        to_path = self.cat_save_path + url_parts.path
 
-        to_path = f"{self.userid}:{self.userpw}@{to_host}:{to_path}"
+        to_path = f"{self.userid}@{to_host}:{to_path}"
+        self.logger.info(f'to_path: {to_path}')
         scp_cmd = f'scp -r -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no {tmp_path} {to_path}'
         os.system(scp_cmd)
