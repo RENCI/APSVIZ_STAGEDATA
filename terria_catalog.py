@@ -120,6 +120,7 @@ class TerriaCatalog:
     # only two ever exists in this group - latest maxele and noaa obs
     def update_latest_results(self, latest_layers):
 
+        self.logger.info(f'latest_layers: {latest_layers}')
         cat_item_list = self.cat_json['catalog'][CatalogGroup.CURRENT.value]['items']
         # find the wms and wfs items in this list - should only be one of each
         item_idx = 0
@@ -129,9 +130,10 @@ class TerriaCatalog:
                 cat_item_list[item_idx]["layers"] = latest_layers["wms_layer"]
             elif(item["type"] == "wfs"):
                 cat_item_list[item_idx]["name"] = latest_layers["wfs_title"]
-                cat_item_list[item_idx]["type_names"] = latest_layers["wfs_layer"]
+                cat_item_list[item_idx]["typeNames"] = latest_layers["wfs_layer"]
             item_idx += 1
 
+        self.logger.info(f'cat_item_list: {cat_item_list}')
         # put this item list back in main catalog
         self.cat_json['catalog'][CatalogGroup.CURRENT.value]['items'] = cat_item_list
 
@@ -261,14 +263,17 @@ class TerriaCatalog:
     # update the TerriaMap data catalog with a list of wms and wfs layers
     # layergrp looks like this: {'wms': [{'layername': '', 'title': ''}], 'wfs': [{'layername': '', 'title': ''}]}
     def update(self, layergrp):
+        self.logger.info(f'layergrp: {layergrp}')
         # make dict to save latest results maxele layer and noaa obs layer
         latest_layers = {"wms_title": "", "wms_layer": "", "wfs_title": "", "wfs_layer": ""}
+        self.logger.info(f'latest_layers: {latest_layers}')
         # first take care of the WMS layers
         for wms_layer_dict in layergrp["wms"]:
             self.add_wms_item(wms_layer_dict["title"], wms_layer_dict["layername"])
             if ("maxele" in wms_layer_dict["layername"]):
                 latest_layers["wms_title"] = wms_layer_dict["title"]
                 latest_layers["wms_layer"] = wms_layer_dict["layername"]
+                break
 
         for wfs_layer_dict in layergrp["wfs"]:
             self.add_wfs_item(wfs_layer_dict["title"], wfs_layer_dict["layername"])
