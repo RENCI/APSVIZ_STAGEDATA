@@ -68,7 +68,7 @@ class TerriaCatalog:
     cat_wms_item = '{' \
         '"isEnabled": true,' \
         '"isShown": true,' \
-        '"isLegendVisible": false,' \
+        '"isLegendVisible": False,' \
         '"name": "Name",' \
         '"description": "This data is produced by the ADCIRC model and presented through the ADCIRC Prediction System Visualizer",' \
         '"dataCustodian": "RENCI",' \
@@ -247,9 +247,9 @@ class TerriaCatalog:
                     name,
                     typeNames,
                     url = "https://apsviz-geoserver.renci.org/geoserver/ADCIRC_2021/wfs/ADCIRC_2021?service=wfs&version=1.3.0&request=GetCapabilities",
-                    enabled = "false",
-                    shown = "false",
-                    legend_visible = "false",
+                    enabled=False,
+                    shown=False,
+                    legend_visible=False,
                     type="wfs",
                     description="NOAA Observations",
                     dataCustodian="RENCI",
@@ -298,7 +298,7 @@ class TerriaCatalog:
         tmp_path = "/data/tmp_cat.json"
         # save catalog file to local tmp file
         with open(tmp_path, 'w') as f:
-            json.dump(self.cat_json, f)
+            json.dump(self.cat_json, f, indent=4)
 
         url_parts = urlparse(self.cat_url)
         to_host = self.host
