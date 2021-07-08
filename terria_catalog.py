@@ -68,7 +68,7 @@ class TerriaCatalog:
     cat_wms_item = '{' \
         '"isEnabled": true,' \
         '"isShown": true,' \
-        '"isLegendVisible": False,' \
+        '"isLegendVisible": false,' \
         '"name": "Name",' \
         '"description": "This data is produced by the ADCIRC model and presented through the ADCIRC Prediction System Visualizer",' \
         '"dataCustodian": "RENCI",' \
