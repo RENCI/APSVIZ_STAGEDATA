@@ -265,8 +265,10 @@ def add_props_datastore(logger, geo, instance_id, worksp, final_path, geoserver_
     asgs_obsdb.insert_station_props(logger, geo, worksp, csv_file_path, geoserver_host)
 
     # create this layer in geoserver
-    geo.create_featurestore(store_name, workspace=worksp, db=dbname, host=asgs_obsdb.get_host(), port=asgs_obsdb.get_port(), schema=table_name,
-                            pg_user=asgs_obsdb.get_user(), pg_password=asgs_obsdb.get_password(), overwrite=False)
+    #geo.create_featurestore(store_name, workspace=worksp, db=dbname, host=asgs_obsdb.get_host(), port=asgs_obsdb.get_port(), schema=table_name,
+                            #pg_user=asgs_obsdb.get_user(), pg_password=asgs_obsdb.get_password(), overwrite=False)
+    # ... using pre-defined postgresql JNDI feature store in Geoserver
+    geo.create_jndi_featurestore(store_name, worksp, overwrite=False)
 
     # now publish this layer with an SQL filter based on instance_id
     sql = f"select * from stations where instance_id='{instance_id}'"
