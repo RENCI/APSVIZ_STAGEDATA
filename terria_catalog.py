@@ -151,6 +151,7 @@ class TerriaCatalog:
     def create_wms_data_item(self,
                              name,
                              layers,
+                             legend_url,
                              enabled,
                              shown,
                              legend_visible,
@@ -168,6 +169,7 @@ class TerriaCatalog:
         wms_item["dataCustodian"] = data_custodian
         wms_item["layers"] = layers
         wms_item["url"] = url
+        wms_item["legend_url"] = legend_url
 
         return wms_item
 
@@ -231,6 +233,15 @@ class TerriaCatalog:
                     type="wms",
                     description="This data is produced by the ADCIRC model and presented through the ADCIRC Prediction System Visualizer",
                     data_custodian="RENCI"):
+
+        # create url for legend
+        # need to get just basic layername and the adcirc var name from the
+        # layers var which is formatted like this: ADCIRC_2021:3548-14-nhcOfcl_maxwvel.63.0.9
+        parts1 = layers.split(':')
+        parts2 = parts1[1].split('_')
+        basic_layer_name = parts2[0]
+        adcirc_var_parts = parts2[1].split('.')
+        legend_url = f"https://apsviz-geoserver.renci.org/obs_pngs/{basic_layer_name}/{adcirc_var_parts[0]}.{adcirc_var_parts[1]}.colorbar.png"
 
         # add this item to the CURRENT group in the catalog
         cat_item_list = self.cat_json['catalog'][CatalogGroup.RECENT.value]['items']
