@@ -245,7 +245,7 @@ class TerriaCatalog:
 
         # add this item to the CURRENT group in the catalog
         cat_item_list = self.cat_json['catalog'][CatalogGroup.RECENT.value]['items']
-        wms_item = self.create_wms_data_item(name, layers, enabled, shown, legend_visible, url, description, data_custodian)
+        wms_item = self.create_wms_data_item(name, layers, legend_url, enabled, shown, legend_visible, url, description, data_custodian)
         cat_item_list.insert(0, wms_item)
 
         # put this item list back into main catalog
