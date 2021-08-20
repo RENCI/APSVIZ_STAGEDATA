@@ -235,13 +235,22 @@ class TerriaCatalog:
                     data_custodian="RENCI"):
 
         # create url for legend
-        # need to get just basic layername and the adcirc var name from the
-        # layers var which is formatted like this: ADCIRC_2021:3548-14-nhcOfcl_maxwvel.63.0.9
+        # need to get just basic layername and the adcirc var name
+        # from the layers var which is formatted like this:
+        # ADCIRC_2021:3548-14-nhcOfcl_maxwvel.63.0.9
+        # or this, in the case of the swan var:
+        # ADCIRC_2021:3041-2021062306-namforecast_swan_HS_max.63.0.9
+        self.logger.debug(f'layers: {layers}')
         parts1 = layers.split(':')
         parts2 = parts1[1].split('_')
+        if (len(parts2) > 3):
+            # this is the swan var name (more dashes in name
+            # make it look like the other var names
+            parts2 = [parts2[0], f"{parts2[1]}_{parts2[2]}_{parts2[3]}"]
         basic_layer_name = parts2[0]
         adcirc_var_parts = parts2[1].split('.')
         legend_url = f"https://apsviz-geoserver.renci.org/obs_pngs/{basic_layer_name}/{adcirc_var_parts[0]}.{adcirc_var_parts[1]}.colorbar.png"
+        self.logger.debug(f'legend_url: {legend_url}')
 
         # add this item to the CURRENT group in the catalog
         cat_item_list = self.cat_json['catalog'][CatalogGroup.RECENT.value]['items']
