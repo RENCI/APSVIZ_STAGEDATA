@@ -74,7 +74,8 @@ class TerriaCatalog:
         '"dataCustodian": "RENCI",' \
         '"layers": "layers",' \
         '"type": "wms",' \
-        '"url": "https://apsviz-geoserver.renci.org/geoserver/ADCIRC_2021/wms"' \
+        '"url": "https://apsviz-geoserver.renci.org/geoserver/ADCIRC_2021/wms",' \
+        '"legendUrl": "legendUrl"' \
     '}'
 
     cat_wfs_item = '{' \
@@ -118,6 +119,27 @@ class TerriaCatalog:
             # storing the JSON response from url in data
             self.cat_json = json.loads(response.read())
 
+    # create url for legend
+    # need to get just basic layername and the adcirc var name
+    # from the layers var which is formatted like this:
+    # ADCIRC_2021:3548-14-nhcOfcl_maxwvel.63.0.9
+    # or this, in the case of the swan var:
+    # ADCIRC_2021:3041-2021062306-namforecast_swan_HS_max.63.0.9
+    def create_legend_url(self, layers):
+
+        self.logger.debug(f'layers: {layers}')
+        parts1 = layers.split(':')
+        parts2 = parts1[1].split('_')
+        if (len(parts2) > 3):
+            # this is the swan var name (more dashes in name)
+            # make it look like the other var names
+            parts2 = [parts2[0], f"{parts2[1]}_{parts2[2]}_{parts2[3]}"]
+        basic_layer_name = parts2[0]
+        adcirc_var_parts = parts2[1].split('.')
+        legend_url = f"https://apsviz-geoserver.renci.org/obs_pngs/{basic_layer_name}/{adcirc_var_parts[0]}.{adcirc_var_parts[1]}.colorbar.png"
+
+        return legend_url
+
 
     # overwrite current catalog items with latest
     # only two ever exists in this group - latest maxele and noaa obs
@@ -129,8 +151,10 @@ class TerriaCatalog:
         item_idx = 0
         for item in cat_item_list:
             if(item["type"] == "wms"):
+                legend_url = self.create_legend_url(latest_layers["wms_layer"])
                 cat_item_list[item_idx]["name"] = latest_layers["wms_title"]
                 cat_item_list[item_idx]["layers"] = latest_layers["wms_layer"]
+                cat_item_list[item_idx]["legendUrl"] = legend_url
             elif(item["type"] == "wfs"):
                 cat_item_list[item_idx]["name"] = latest_layers["wfs_title"]
                 cat_item_list[item_idx]["typeNames"] = latest_layers["wfs_layer"]
@@ -169,7 +193,7 @@ class TerriaCatalog:
         wms_item["dataCustodian"] = data_custodian
         wms_item["layers"] = layers
         wms_item["url"] = url
-        wms_item["legend_url"] = legend_url
+        wms_item["legendUrl"] = legend_url
 
         return wms_item
 
@@ -186,7 +210,7 @@ class TerriaCatalog:
                              feature_info_template
                              ):
         wfs_item = {}
-        wfs_item = json.loads(self.cat_wms_item)
+        wfs_item = json.loads(self.cat_wfs_item)
         wfs_item["isEnabled"] = enabled
         wfs_item["isShown"] = shown
         wfs_item["isLegendVisible"] = legend_visible
@@ -235,21 +259,7 @@ class TerriaCatalog:
                     data_custodian="RENCI"):
 
         # create url for legend
-        # need to get just basic layername and the adcirc var name
-        # from the layers var which is formatted like this:
-        # ADCIRC_2021:3548-14-nhcOfcl_maxwvel.63.0.9
-        # or this, in the case of the swan var:
-        # ADCIRC_2021:3041-2021062306-namforecast_swan_HS_max.63.0.9
-        self.logger.debug(f'layers: {layers}')
-        parts1 = layers.split(':')
-        parts2 = parts1[1].split('_')
-        if (len(parts2) > 3):
-            # this is the swan var name (more dashes in name
-            # make it look like the other var names
-            parts2 = [parts2[0], f"{parts2[1]}_{parts2[2]}_{parts2[3]}"]
-        basic_layer_name = parts2[0]
-        adcirc_var_parts = parts2[1].split('.')
-        legend_url = f"https://apsviz-geoserver.renci.org/obs_pngs/{basic_layer_name}/{adcirc_var_parts[0]}.{adcirc_var_parts[1]}.colorbar.png"
+        legend_url= self.create_legend_url(layers)
         self.logger.debug(f'legend_url: {legend_url}')
 
         # add this item to the CURRENT group in the catalog
