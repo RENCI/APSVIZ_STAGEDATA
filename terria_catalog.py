@@ -315,7 +315,7 @@ class TerriaCatalog:
         self.update_latest_results(latest_layers)
 
         # now delete the oldest entries in the CURRENT group
-        self.rm_oldest_recent_items()
+        #self.rm_oldest_recent_items()
 
         # now save all of these updates to the catalog file
         self.save()
