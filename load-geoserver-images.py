@@ -140,22 +140,22 @@ class asgsDB:
         # must create the_geom from lat, lon provided in csv file
         # also add to instance id column
         # and finally, create an url where the obs chart for each station can be accessed
-        try:
-            with open(csv_file_path, 'r') as f:
-                reader = csv.reader(f)
-                next(reader)  # Skip the header row.
-                for row in reader:
-                    logger.debug(f"opened csv file - saving this row to db: {row}")
-                    png_url = f"https://{host}/obs_pngs/{self.instanceId}/{row[6]}"
-                    sql_stmt = "INSERT INTO stations (stationid, stationname, state, lat, lon, node, filename, the_geom, instance_id, imageurl) VALUES (%s, %s, %s, %s, %s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s),4326), %s, %s)"
-                    params = [row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[4], row[3], self.instanceId, png_url]
-                    logger.debug(f"sql_stmt: {sql_stmt} params: {sql_stmt}")
-                    self.cursor.execute(sql_stmt, params)
+        #try: catch this exception in calling program instead
+        with open(csv_file_path, 'r') as f:
+            reader = csv.reader(f)
+            next(reader)  # Skip the header row.
+            for row in reader:
+                logger.debug(f"opened csv file - saving this row to db: {row}")
+                png_url = f"https://{host}/obs_pngs/{self.instanceId}/{row[6]}"
+                sql_stmt = "INSERT INTO stations (stationid, stationname, state, lat, lon, node, filename, the_geom, instance_id, imageurl) VALUES (%s, %s, %s, %s, %s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s),4326), %s, %s)"
+                params = [row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[4], row[3], self.instanceId, png_url]
+                logger.debug(f"sql_stmt: {sql_stmt} params: {sql_stmt}")
+                self.cursor.execute(sql_stmt, params)
 
-            self.conn.commit()
-        except:
-            e = sys.exc_info()[0]
-            self.logger.error(f"FAILURE - Cannot save run properties in ASGS_DB. error {e}")
+        self.conn.commit()
+        #except:
+            #e = sys.exc_info()[0]
+            #self.logger.error(f"FAILURE - Cannot save run properties in ASGS_DB. error {e}")
 
 
 
@@ -262,7 +262,12 @@ def add_props_datastore(logger, geo, instance_id, worksp, final_path, geoserver_
     # get asgs db connection
     asgs_obsdb = asgsDB(logger, dbname, instance_id)
     # save stationProps file to db
-    asgs_obsdb.insert_station_props(logger, geo, worksp, csv_file_path, geoserver_host)
+    try: # make sure this completes before moving on - observations may not exist for this grid
+        asgs_obsdb.insert_station_props(logger, geo, worksp, csv_file_path, geoserver_host)
+    except:
+        e = sys.exc_info()[0]
+        logger.warning(f"WARNING - Cannot save run properties in ASGS_DB. Error: {e}")
+        return layergrp
 
     # create this layer in geoserver
     #geo.create_featurestore(store_name, workspace=worksp, db=dbname, host=asgs_obsdb.get_host(), port=asgs_obsdb.get_port(), schema=table_name,
