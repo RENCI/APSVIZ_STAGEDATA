@@ -315,22 +315,24 @@ def copy_pngs(logger, geoserver_host, geoserver_vm_userid, geoserver_proj_path, 
     logger.debug(f"copy_pngs: mkdir_cmd={mkdir_cmd}")
     os.system(mkdir_cmd)
 
-    # now go through any .png files in the insets dir
-    for file in fnmatch.filter(os.listdir(from_path), '*.png'):
-        from_file_path = from_path + file
-        to_file_path = to_path + file
-        logger.debug(f"Copying .png file from: {from_file_path}  to: {to_file_path}")
-        scp_cmd = f'scp -r -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no {from_file_path} {to_file_path}'
-        os.system(scp_cmd)
+    # now go through any .png files in the insets dir, if it exists
+    if (os.path.isdir(from_path)):
+        for file in fnmatch.filter(os.listdir(from_path), '*.png'):
+            from_file_path = from_path + file
+            to_file_path = to_path + file
+            logger.debug(f"Copying .png file from: {from_file_path}  to: {to_file_path}")
+            scp_cmd = f'scp -r -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no {from_file_path} {to_file_path}'
+            os.system(scp_cmd)
 
     # also now pick up legend .png files in the tiff directory
     from_path = f"{final_path}/tiff/"
-    for file in fnmatch.filter(os.listdir(from_path), '*.png'):
-        from_file_path = from_path + file
-        to_file_path = to_path + file
-        logger.debug(f"Copying .png file from: {from_file_path}  to: {to_file_path}")
-        scp_cmd = f'scp -r -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no {from_file_path} {to_file_path}'
-        os.system(scp_cmd)
+    if (os.path.isdir(from_path)):
+        for file in fnmatch.filter(os.listdir(from_path), '*.png'):
+            from_file_path = from_path + file
+            to_file_path = to_path + file
+            logger.debug(f"Copying .png file from: {from_file_path}  to: {to_file_path}")
+            scp_cmd = f'scp -r -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no {from_file_path} {to_file_path}'
+            os.system(scp_cmd)
 
 
 # given an instance id and an input dir (where to find mbtiles)
