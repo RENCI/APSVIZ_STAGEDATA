@@ -215,21 +215,22 @@ def add_mbtiles_coveragestores(logger, geo, url, instance_id, worksp, mbtiles_pa
                                        file_type=fmt,
                                        content_type='application/vnd.sqlite3')
         logger.debug(f"Attempted to add coverage store, file path: {file_path}  return value: {ret}")
+        if (ret is None):  # coverage store successfully created
 
-        # now we just need to tweak the layer title to make it more
-        # readable in Terria Map
-        title = update_layer_title(logger, geo, instance_id, worksp, layer_name)
+            # now we just need to tweak the layer title to make it more
+            # readable in Terria Map
+            title = update_layer_title(logger, geo, instance_id, worksp, layer_name)
 
-        # update DB with url of layer for access from website NEED INSTANCE ID for this
-        layer_url = f'{url}rest/workspaces/{worksp}/coveragestores/{layer_name}.json'
-        logger.debug(f"Adding coverage store to DB, instanceId: {instance_id} coveragestore url: {layer_url}")
-        db_name = os.getenv('ASGS_DB_DATABASE', 'asgs').strip()
-        asgsdb = asgsDB(logger, db_name, instance_id)
-        asgsdb.saveImageURL(file, layer_url)
+            # update DB with url of layer for access from website NEED INSTANCE ID for this
+            layer_url = f'{url}rest/workspaces/{worksp}/coveragestores/{layer_name}.json'
+            logger.debug(f"Adding coverage store to DB, instanceId: {instance_id} coveragestore url: {layer_url}")
+            db_name = os.getenv('ASGS_DB_DATABASE', 'asgs').strip()
+            asgsdb = asgsDB(logger, db_name, instance_id)
+            asgsdb.saveImageURL(file, layer_url)
 
-        # add this layer to the wms layer group dict
-        full_layername = f"{worksp}:{layer_name}"
-        layergrp["wms"].append({"title": title, "layername": full_layername})
+            # add this layer to the wms layer group dict
+            full_layername = f"{worksp}:{layer_name}"
+            layergrp["wms"].append({"title": title, "layername": full_layername})
 
     return layergrp
 
@@ -264,7 +265,7 @@ def add_props_datastore(logger, geo, instance_id, worksp, final_path, geoserver_
     # save stationProps file to db
     try: # make sure this completes before moving on - observations may not exist for this grid
         asgs_obsdb.insert_station_props(logger, geo, worksp, csv_file_path, geoserver_host)
-    except:
+    except (IOError, OSError):
         e = sys.exc_info()[0]
         logger.warning(f"WARNING - Cannot save run properties in ASGS_DB. Error: {e}")
         return layergrp
@@ -273,32 +274,34 @@ def add_props_datastore(logger, geo, instance_id, worksp, final_path, geoserver_
     #geo.create_featurestore(store_name, workspace=worksp, db=dbname, host=asgs_obsdb.get_host(), port=asgs_obsdb.get_port(), schema=table_name,
                             #pg_user=asgs_obsdb.get_user(), pg_password=asgs_obsdb.get_password(), overwrite=False)
     # ... using pre-defined postgresql JNDI feature store in Geoserver
-    geo.create_jndi_featurestore(store_name, worksp, overwrite=False)
+    ret = geo.create_jndi_featurestore(store_name, worksp, overwrite=False)
+    if ret is None: # sucessful
 
-    # now publish this layer with an SQL filter based on instance_id
-    sql = f"select * from stations where instance_id='{instance_id}'"
-    name = f"{instance_id}_station_properies_view"
+        # now publish this layer with an SQL filter based on instance_id
+        sql = f"select * from stations where instance_id='{instance_id}'"
+        name = f"{instance_id}_station_properies_view"
 
-    # TODO probably need to update this name - 5/21/21 - okay updated ...
-    #  but maybe need to make this a little less messy
-    db_name = os.getenv('ASGS_DB_DATABASE', 'asgs').strip()
-    asgsdb = asgsDB(logger, db_name, instance_id)
-    meta_dict = asgsdb.getRunMetadata()
-    raw_date = meta_dict['currentdate']
-    if raw_date:
-        # raw date format is YYMMDD
-        date_list = [raw_date[i:i + 2] for i in range(0, len(raw_date), 2)]
-        if len(date_list) == 3:
-            run_date = f"{date_list[1]}-{date_list[2]}-20{date_list[0]}"
-    if (meta_dict['forcing.stormname'] == 'NA'):
-        title = f"NOAA Observations - Date: {run_date} Cycle: {meta_dict['currentcycle']} Storm Name: {meta_dict['asgs.enstorm']} ADCIRC Grid: {meta_dict['ADCIRCgrid']}"
-    else:
-        title = f"NOAA Observations - Date: {run_date} Cycle: {meta_dict['currentcycle']} Storm Name: {meta_dict['forcing.stormname']}:{meta_dict['asgs.enstorm']} Advisory:{meta_dict['advisory']} ADCIRC Grid: {meta_dict['ADCIRCgrid']}"
-    geo.publish_featurestore_sqlview(name, title, store_name, sql, key_column='gid', geom_name='the_geom', geom_type='Geometry', workspace=worksp)
+        # TODO probably need to update this name - 5/21/21 - okay updated ...
+        #  but maybe need to make this a little less messy
+        db_name = os.getenv('ASGS_DB_DATABASE', 'asgs').strip()
+        asgsdb = asgsDB(logger, db_name, instance_id)
+        meta_dict = asgsdb.getRunMetadata()
+        raw_date = meta_dict['currentdate']
+        if raw_date:
+            # raw date format is YYMMDD
+            date_list = [raw_date[i:i + 2] for i in range(0, len(raw_date), 2)]
+            if len(date_list) == 3:
+                run_date = f"{date_list[1]}-{date_list[2]}-20{date_list[0]}"
+        if (meta_dict['forcing.stormname'] == 'NA'):
+            title = f"NOAA Observations - Date: {run_date} Cycle: {meta_dict['currentcycle']} Storm Name: {meta_dict['asgs.enstorm']} ADCIRC Grid: {meta_dict['ADCIRCgrid']}"
+        else:
+            title = f"NOAA Observations - Date: {run_date} Cycle: {meta_dict['currentcycle']} Storm Name: {meta_dict['forcing.stormname']}:{meta_dict['asgs.enstorm']} Advisory:{meta_dict['advisory']} ADCIRC Grid: {meta_dict['ADCIRCgrid']}"
+        geo.publish_featurestore_sqlview(name, title, store_name, sql, key_column='gid', geom_name='the_geom', geom_type='Geometry', workspace=worksp)
 
-    # add this layer to the wfs layer group dict
-    full_layername = f"{worksp}:{name}"
-    layergrp["wfs"].append({"title": title, "layername": full_layername})
+        # add this layer to the wfs layer group dict
+        full_layername = f"{worksp}:{name}"
+        layergrp["wfs"].append({"title": title, "layername": full_layername})
+
     return layergrp
 
 
