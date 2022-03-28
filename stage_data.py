@@ -73,10 +73,3 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     sys.exit(main(args))
-
-"""
-stage_data.py --inputURL http://tds.renci.org/thredds/fileServer/2022/nam/2022032212/hsofs/hatteras.renci.org/hsofs-nam-bob-2021/namforecast --outputDir /mnt/c/temp
-
-                         http://tds.renci.org/thredds/fileServer/2022/nam/2022032212/hsofs/hatteras.renci.org/hsofs-nam-bob-2021/namforecast/maxele.63.nc
-                         http://tds.renci.org/thredds/fileServer/2022/nam/2022032212/hsofs/hatteras.renci.org/hsofs-nam-bob-2021/maxele.63.nc
-"""
