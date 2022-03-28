@@ -4,6 +4,7 @@ import os, sys, wget
 import logging
 from urllib.error import HTTPError
 from common.logging import LoggingUtil
+from urllib import parse
 
 filelist={'zeta_max':    'maxele.63.nc', 
           'swan_HS_max': 'swan_HS_max.63.nc',
@@ -17,7 +18,10 @@ def getDataFile(outdir, url, infilename, logger):
     # Get infilename and download netcdf file
     logger.debug(f"About to wget - filename: {infilename}")
     try:
-        outfilename = wget.download(os.path.join(url,infilename), os.path.join(outdir,infilename))
+        url = url if url.endswith("/") else f"{url}/"
+
+        outfilename = wget.download(parse.urljoin(url, infilename), os.path.join(outdir, infilename))
+
         return outfilename
     except HTTPError as e:
         logger.error(e)
@@ -70,4 +74,9 @@ if __name__ == '__main__':
 
     sys.exit(main(args))
 
+"""
+stage_data.py --inputURL http://tds.renci.org/thredds/fileServer/2022/nam/2022032212/hsofs/hatteras.renci.org/hsofs-nam-bob-2021/namforecast --outputDir /mnt/c/temp
 
+                         http://tds.renci.org/thredds/fileServer/2022/nam/2022032212/hsofs/hatteras.renci.org/hsofs-nam-bob-2021/namforecast/maxele.63.nc
+                         http://tds.renci.org/thredds/fileServer/2022/nam/2022032212/hsofs/hatteras.renci.org/hsofs-nam-bob-2021/maxele.63.nc
+"""
