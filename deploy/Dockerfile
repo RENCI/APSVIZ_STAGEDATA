@@ -7,15 +7,13 @@
 #       docker push renciorg/stagedata:latest
 ##############
 
-FROM renciorg/gdal-python:gdal3.0.4-py3.8
+FROM python:3.8.5
 
 # set the logging level
 ENV LOG_LEVEL=10
 
 # get some credit
 LABEL maintainer="jtilson@renci.org"
-
-RUN apt-get install -y libgnutls28-dev
 
 # create a non-root user with a home directory
 RUN useradd -m -d /home/nru -u 1000 nru
