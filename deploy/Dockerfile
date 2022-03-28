@@ -7,7 +7,7 @@
 #       docker push renciorg/stagedata:latest
 ##############
 
-FROM python:3.8.5
+FROM renciorg/gdal-python:gdal3.0.4-py3.8
 
 # set the logging level
 ENV LOG_LEVEL=10
@@ -15,8 +15,13 @@ ENV LOG_LEVEL=10
 # get some credit
 LABEL maintainer="jtilson@renci.org"
 
+RUN apt-get install -y libgnutls28-dev
+
+# create a non-root user with a home directory
 RUN useradd -m -d /home/nru -u 1000 nru
-RUN chmod 777 /home/nru
+
+# switch to the new non-root user
+USER nru
 
 # make a directory for the repos and go there
 RUN mkdir /home/nru/repo
@@ -31,7 +36,7 @@ WORKDIR /home/nru/repo/APSVIZ_STAGEDATA
 # install the pip requirements
 RUN pip install -r requirements.txt
 
-USER nru
+RUN chmod 777 /home/nru
 
 ##########
 # at this point the container is ready to accept the launch command.
