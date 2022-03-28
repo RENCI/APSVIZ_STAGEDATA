@@ -1,4 +1,5 @@
 wget
+urllib3==1.26.7
 GDAL>=2.2.4
 git+https://github.com/lstillwe/geoserver-rest.git
 geoserver-restconfig==2.0.4.8
