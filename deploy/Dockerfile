@@ -7,7 +7,7 @@
 #       docker push renciorg/stagedata:latest
 ##############
 
-FROM thinkwhere/gdal-python
+FROM python:3.8.5
 
 # set the logging level
 ENV LOG_LEVEL=10

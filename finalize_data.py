@@ -27,7 +27,8 @@ def main(args):
     Simple processor to assemble into a tarball all the files that exists under the input --inputDir
     and move the tarball (and possibly expand) into the output directory --outputDir
 
-    For now, the outputDir must be a local file system.
+    Updated 5/27/21 : Tarball no longer needed. This process will now just clean up all the data
+    created for this model run
     '''
     # logging.basicConfig(filename='log',format='%(asctime)s : %(levelname)s : %(funcName)s : %(module)s : %(name)s : %(message)s', level=logging.WARNING)
     # get the log level and directory from the environment
@@ -56,17 +57,35 @@ def main(args):
         logger.error("Missing Input dir {}".format(args.inputDir))
         return 1
 
+    # Not needed anymore
+    '''
     if not os.path.exists(args.outputDir):
         logger.error("Create Output dir {}".format(args.outputDir))
         os.makedirs(args.outputDir)
+    '''
 
     logger.info('Input URL is {}'.format(inputDir))
     logger.info('OutputDir is {}'.format(args.outputDir))
+
+    # inputDir looks something like this: /data/2900-2021052612-namforecast/final
+    # want to remove dir from one level up - i.e. here : /data/2900-2021052612-namforecast
+    dir_to_remove = inputDir
+    dir_parts = inputDir.split('/')
+    if(len(dir_parts) > 2):
+        dir_to_remove = f'/{dir_parts[1]}/{dir_parts[2]}'
+
+    logger.info('Removing dir: {}'.format(dir_to_remove))
+    try:
+        if os.path.isdir(dir_to_remove):
+            shutil.rmtree(dir_to_remove)
+    except OSError as e:
+        print("Error: %s : %s" % (dir_to_remove, e.strerror))
 
     #if args.externalDir not None:
     #    utilities.log.info('An external dir was specified. Checking status is the job of the caller {}'.args.externalDir)
 
     # Construct local tarball
+    ''' Don't need this code anymore
     logger.info('Try to construct a tarfile archive at {}'.format(inputDir))
     tarname = '_'.join([args.tarMeta,'archive.tar.gz'])
     num_files = make_tarfile(tarname, args.inputDir, logger)
@@ -89,6 +108,7 @@ def main(args):
         logger.info('Execute cmd: {}'.format(bldcmd))
         os.system(bldcmd) 
         logger.info('Hierarchy of file sent back')
+    '''
 
 # Still need a password for this top work
 
