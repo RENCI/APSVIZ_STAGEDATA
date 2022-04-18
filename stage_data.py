@@ -2,6 +2,7 @@
 
 import os, sys, wget
 import logging
+import netCDF4 as nc
 from urllib.error import HTTPError
 from common.logging import LoggingUtil
 from urllib import parse
@@ -15,17 +16,19 @@ mode = 0o755
 def getDataFile(outdir, url, infilename, logger):
     '''
     '''
+    # init return value
+    ret_val = None
+
     # Get infilename and download netcdf file
     logger.debug(f"About to wget - filename: {infilename}")
     try:
         url = url if url.endswith("/") else f"{url}/"
 
-        outfilename = wget.download(parse.urljoin(url, infilename), os.path.join(outdir, infilename))
-
-        return outfilename
+        ret_val = wget.download(parse.urljoin(url, infilename), os.path.join(outdir, infilename))
     except HTTPError as e:
         logger.error(e)
-        return None
+
+    return ret_val
 
 def main(args):
     '''    
@@ -59,9 +62,39 @@ def main(args):
     logger.info('OutputDir is {}'.format(args.outputDir))
 
     num = len(filelist)
+    error = False
+
     for v in filelist:
-        outname=getDataFile(args.outputDir, inputURL, filelist[v], logger)
-        print(f"")
+        # grab the file
+        outname = getDataFile(args.outputDir, inputURL, filelist[v], logger)
+
+        # if there was a file gathered
+        if outname is not None:
+            # load the NetCDF file
+            f = nc.Dataset(outname)
+
+            # each NetCDF dimension must have a non-zero value
+            for dim in f.dimensions.values():
+                # is there a value
+                if dim.size == 0:
+                    # log the error
+                    logger.error(f'Error: NetCDF Dimension "{dim.name}" for file {v} ({filelist[v]}) is invalid.')
+
+                    # declare failure
+                    error = True
+        # else the file was not found
+        else:
+            # log the error
+            logger.error(f'Error: NetCDF file {v} ({filelist[v]}) was not found.')
+
+            # declare failure
+            error = True
+
+        # if there was an error, abort
+        if error:
+            # no need to continue
+            sys.exit(1)
+
     logger.info('Finished moving {} files '.format(num))
 
 if __name__ == '__main__':
