@@ -53,10 +53,6 @@ def main(args):
         logger.error("Need output directory on command line: --output <outputdir>.")
         return 1
 
-    if not os.path.exists(args.inputDir):
-        logger.error("Missing Input dir {}".format(args.inputDir))
-        return 1
-
     # Not needed anymore
     '''
     if not os.path.exists(args.outputDir):
@@ -73,6 +69,11 @@ def main(args):
     dir_parts = inputDir.split('/')
     if(len(dir_parts) > 2):
         dir_to_remove = f'/{dir_parts[1]}/{dir_parts[2]}'
+
+    # check to see if the directory exists
+    if not os.path.exists(dir_to_remove):
+        logger.error("Missing Input dir {}".format(dir_to_remove))
+        return 1
 
     logger.info('Removing dir: {}'.format(dir_to_remove))
     try:
