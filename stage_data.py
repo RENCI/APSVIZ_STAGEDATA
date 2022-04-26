@@ -84,11 +84,13 @@ def main(args):
                     error = True
         # else the file was not found
         else:
-            # log the error
-            logger.error(f'Error: NetCDF file {v} ({filelist[v]}) was not found.')
+            # swan files are optional
+            if not v.startswith("swan"):
+                # log the error
+                logger.error(f'Error: NetCDF file {v} ({filelist[v]}) was not found.')
 
-            # declare failure
-            error = True
+                # declare failure
+                error = True
 
         # if there was an error, abort
         if error:
