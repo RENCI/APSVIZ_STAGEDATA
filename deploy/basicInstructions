@@ -15,3 +15,5 @@ sudo docker push renciorg/stagedata:latest
 # Start upo an interactive session
 sudo docker run -it stagedata:latest bash
 
+####################
+
