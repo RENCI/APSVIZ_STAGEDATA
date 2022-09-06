@@ -16,6 +16,7 @@ mode = 0o755
 def getDataFile(outdir, url, infilename, logger):
     '''
     '''
+    logger.debug(f"getDataFile: args: outdir={outdir}  url={url}  infilename={infilename}")
     # init return value
     ret_val = None
 
@@ -25,7 +26,7 @@ def getDataFile(outdir, url, infilename, logger):
         url = url if url.endswith("/") else f"{url}/"
 
         ret_val = wget.download(parse.urljoin(url, infilename), os.path.join(outdir, infilename))
-    except HTTPError as e:
+    except Exception as e:
         logger.error(e)
 
     return ret_val
@@ -55,39 +56,51 @@ def main(args):
         logger.info("Need output directory on command line: --output <outputdir>.")
         return 1
 
-    if not os.path.exists(args.outputDir):
-        os.makedirs(args.outputDir)
+    try:
+        if not os.path.exists(args.outputDir):
+            os.makedirs(args.outputDir)
+    except Exception as e:
+        logger.error(f"Error: Could not create file output directory: {e}")
 
     logger.info('Input URL is {}'.format(inputURL))
     logger.info('OutputDir is {}'.format(args.outputDir))
 
-    num = len(filelist)
-    error = False
 
-    for v in filelist:
+    error = False
+    num = 0
+
+    for key in filelist:
+        logger.debug(f"Processing NetDCF file: {filelist[key]}")
         # grab the file
-        outname = getDataFile(args.outputDir, inputURL, filelist[v], logger)
+        outname = getDataFile(args.outputDir, inputURL, filelist[key], logger)
 
         # if there was a file gathered
         if outname is not None:
+            logger.debug(f"Downloaded filename is: {outname}")
             # load the NetCDF file
-            f = nc.Dataset(outname)
+            try:
+                logger.debug(f"Checking validity of NetCDF file {outname}")
+                f = nc.Dataset(outname)
 
-            # each NetCDF dimension must have a non-zero value
-            for dim in f.dimensions.values():
-                # is there a value
-                if dim.size == 0:
-                    # log the error
-                    logger.error(f'Error: NetCDF Dimension "{dim.name}" for file {v} ({filelist[v]}) is invalid.')
+                # each NetCDF dimension must have a non-zero value
+                for dim in f.dimensions.values():
+                    # is there a value
+                    if dim.size == 0:
+                        # log the error
+                        logger.error(f'Error: NetCDF Dimension "{dim.name}" for file {key} ({filelist[key]}) is invalid.')
+                        # declare failure
+                        error = True
+                    else:
+                        num = num + 1
+            except Exception as e:
+                logger.error('Error checking validity of NetCDF file "{outname}": {e}')
 
-                    # declare failure
-                    error = True
         # else the file was not found
         else:
             # swan files are optional
-            if not v.startswith("swan"):
+            if not key.startswith("swan"):
                 # log the error
-                logger.error(f'Error: NetCDF file {v} ({filelist[v]}) was not found.')
+                logger.error(f'Error: NetCDF file {key} ({filelist[key]}) was not found.')
 
                 # declare failure
                 error = True
@@ -95,6 +108,7 @@ def main(args):
         # if there was an error, abort
         if error:
             # no need to continue
+            logger.debug("Error is True - sys exiting with value of 1")
             sys.exit(1)
 
     logger.info('Finished moving {} files '.format(num))
