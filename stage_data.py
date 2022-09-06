@@ -90,10 +90,10 @@ def main(args):
                         logger.error(f'Error: NetCDF Dimension "{dim.name}" for file {key} ({filelist[key]}) is invalid.')
                         # declare failure
                         error = True
-                    else:
-                        num = num + 1
             except Exception as e:
                 logger.error('Error checking validity of NetCDF file "{outname}": {e}')
+
+            num = num + 1
 
         # else the file was not found
         else:
