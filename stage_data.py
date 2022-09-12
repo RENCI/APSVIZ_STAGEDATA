@@ -183,7 +183,7 @@ def main(args):
     logger.info('OutputDir is {}'.format(args.outputDir))
 
     # if this is a tropical storm, stage storm track layers for subsequent storage in GeoServer
-    if (bool(args.isHurricane)):
+    if (args.isHurricane.startswith('T')):
         retrieveStormShapefiles(args.outputDir, logger)
 
     error = False
