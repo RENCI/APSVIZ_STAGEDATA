@@ -70,9 +70,9 @@ def organizeNhcZips(shape_dir, out_file, logger):
     return
 
 
-def retrieveStormShapefiles(outputDir, logger):
-    logger.info(f"retrieveStormShapefiles: outputDir={outputDir}")
-    shp_srch_str = "[shp]"
+def retrieveStormShapefiles(outputDir, storm_name, logger):
+    logger.info(f"retrieveStormShapefiles: outputDir={outputDir}  stormname={storm_name}")
+    shp_srch_str = f"[shp] - Hurricane {storm_name.lower().capitalize()}"
     cone_srch_str = "Cone of Uncertainty"
     shape_dir = f"{outputDir}/shapefiles"
 
@@ -183,8 +183,9 @@ def main(args):
     logger.info('OutputDir is {}'.format(args.outputDir))
 
     # if this is a tropical storm, stage storm track layers for subsequent storage in GeoServer
-    if (args.isHurricane.startswith('T')):
-        retrieveStormShapefiles(args.outputDir, logger)
+    storm_name = args.isHurricane
+    if ("None" not in storm_name):
+        retrieveStormShapefiles(args.outputDir, storm_name, logger)
 
     error = False
     num = 0
@@ -238,7 +239,7 @@ if __name__ == '__main__':
     parser = ArgumentParser(description=main.__doc__)
     parser.add_argument('--inputURL', default=None, help='URL to retrieve data from', type=str)
     parser.add_argument('--outputDir', default=None, help='Destination directory', type=str)
-    parser.add_argument('--isHurricane', default="False", help='Hurricane run flag', type=str)
+    parser.add_argument('--isHurricane', default=None, help='Hurricane run flag', type=str)
     args = parser.parse_args()
 
     sys.exit(main(args))
