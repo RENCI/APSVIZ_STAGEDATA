@@ -1,8 +1,13 @@
 #!/usr/bin/env python
 
 import os, sys, wget
+
 import logging
 import netCDF4 as nc
+import zipfile
+import glob
+from rss_parser import Parser
+from requests import get
 from urllib.error import HTTPError
 from common.logging import LoggingUtil
 from urllib import parse
@@ -12,6 +17,11 @@ filelist={'zeta_max':    'maxele.63.nc',
           'wind_max':    'maxwvel.63.nc', 
           'water_levels': 'fort.63.nc'}
 mode = 0o755
+
+NHC_Url = "https://www.nhc.noaa.gov/gis-at.xml"
+NHC_filelist = {'_pgn.': 'cone',
+                '_pts.': 'points',
+                '_lin.': 'track'}
 
 def getDataFile(outdir, url, infilename, logger):
     '''
@@ -30,6 +40,109 @@ def getDataFile(outdir, url, infilename, logger):
         logger.error(e)
 
     return ret_val
+
+# unzip the NHC shapefiles and organize into a zip for each layer
+def organizeNhcZips(shape_dir, out_file, logger):
+    # unzip the NHC shapefile zip
+    with zipfile.ZipFile(os.path.join(shape_dir, out_file), 'r') as zip_ref:
+        zip_ref.extractall(shape_dir)
+
+    # now - first remove the original zipfile
+    os.remove(os.path.join(shape_dir, out_file))
+
+    # go through each name and create an archive for each
+    # for name in distinct_name_list:
+    for key in NHC_filelist:
+        # get list of files for this pattern
+        file_list = glob.glob(f"{shape_dir}/*{key}*")
+
+        # set full path name for zipfile we are about to create
+        full_path = f"{os.path.join(shape_dir, NHC_filelist[key])}.zip"
+        zipObj = zipfile.ZipFile(full_path, 'w')
+
+        # add each file to the zip archive
+        for specific_name in file_list:
+            logger.debug(f"adding file {specific_name} to zipfile: {full_path}")
+            zipObj.write(specific_name)
+
+        zipObj.close()
+
+    return
+
+
+def retrieveStormShapefiles(outputDir, logger):
+    logger.info(f"retrieveStormShapefiles: outputDir={outputDir}")
+    shp_srch_str = "[shp]"
+    cone_srch_str = "Cone of Uncertainty"
+    shape_dir = f"{outputDir}/shapefiles"
+
+    # mkdir for shapefiles
+    try:
+        if not os.path.exists(shape_dir):
+            os.makedirs(shape_dir)
+    except Exception as e:
+        logger.error(f"Error: Could not create shapefile output directory: {e}")
+        return
+
+    # retrieve the rss feed xml from the nhc
+    rss_url = NHC_Url
+    xml = None
+    try:
+        xml = get(rss_url)
+    except Exception as e:
+        logger.error(f"Could not get NHC RSS url: {rss_url}  error: {e}")
+
+    if xml is None:
+        logger.error(f"Nothing return for NHC RSS url: {rss_url}")
+        return
+
+    logger.debug("NHC RSS feed info returned:")
+    logger.debug(xml.content)
+
+    # parse the RSS feed content (basically just XML)
+    try:
+        parser = Parser(xml=xml.content)
+        feed = parser.parse()
+    except Exception(e):
+        logger.error(f"Cannot parse NHC RSS Feed: {e}")
+        # just give up on this and return
+        return
+
+    # Iteratively search through feed items
+    download_url = None
+    for item in feed.feed:
+        # look for particular shapefiles that we are interested in
+        # if they are not found - that most like like means there in no active tropical storm
+        # example title: <title>Advisory #027 Forecast [shp] - Hurricane Earl (AT1/AL062022)</title>
+        # example description: <description>Forecast Track, Cone of Uncertainty, Watches/Warnings. Shapefile last updated Fri, 09 Sep 2022 14:37:42 GMT</description>
+        if ((shp_srch_str in item.title) and (cone_srch_str in item.description)):
+            # now get the download url for these shapefiles and organize in output dir
+            download_url = item.link
+            logger.info(f"Found download link for shapefiles: {download_url}")
+            break
+
+    if download_url is not None:
+        # now wget the shapefile zip
+        # example url: https://www.nhc.noaa.gov/gis/forecast/archive/al062022_5day_027.zip
+        try:
+            url_parts = parse.urlparse(download_url)
+            path_parts = url_parts[2].rpartition('/')
+            out_file = path_parts[2]
+            ret_val = wget.download(download_url, os.path.join(shape_dir, out_file))
+            if ret_val is None:
+                # in this case the download failed
+                # so log the error and return
+                logger.error(f"Download of NHC shapefiles failed, url: {download_url}")
+                return
+        except Exception as e:
+            logger.error(f"Exception occured during download of NHC shapefiles, url: {download_url}  error: {e}")
+
+        logger.info(f"Downloaded NHC shapefile zip into: {os.path.join(shape_dir, out_file)}")
+        # now unzip and organize into new zipfiles
+        organizeNhcZips(shape_dir, out_file, logger)
+
+        return
+
 
 def main(args):
     '''    
@@ -56,6 +169,10 @@ def main(args):
         logger.info("Need output directory on command line: --output <outputdir>.")
         return 1
 
+    if not args.isHurricane:
+        logger.info("Need isHurricane flag on command line: --isHurricane <True/False>.")
+        return 1
+
     try:
         if not os.path.exists(args.outputDir):
             os.makedirs(args.outputDir)
@@ -65,6 +182,9 @@ def main(args):
     logger.info('Input URL is {}'.format(inputURL))
     logger.info('OutputDir is {}'.format(args.outputDir))
 
+    # if this is a tropical storm, stage storm track layers for subsequent storage in GeoServer
+    if (args.isHurricane):
+        retrieveStormShapefiles(args.outputDir, logger)
 
     error = False
     num = 0
@@ -118,7 +238,7 @@ if __name__ == '__main__':
     parser = ArgumentParser(description=main.__doc__)
     parser.add_argument('--inputURL', default=None, help='URL to retrieve data from', type=str)
     parser.add_argument('--outputDir', default=None, help='Destination directory', type=str)
-    
+    parser.add_argument('--isHurricane', default=False, help='Hurricane run flag', type=bool)
     args = parser.parse_args()
 
     sys.exit(main(args))
