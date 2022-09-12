@@ -183,7 +183,7 @@ def main(args):
     logger.info('OutputDir is {}'.format(args.outputDir))
 
     # if this is a tropical storm, stage storm track layers for subsequent storage in GeoServer
-    if (args.isHurricane):
+    if (bool(args.isHurricane)):
         retrieveStormShapefiles(args.outputDir, logger)
 
     error = False
@@ -238,7 +238,7 @@ if __name__ == '__main__':
     parser = ArgumentParser(description=main.__doc__)
     parser.add_argument('--inputURL', default=None, help='URL to retrieve data from', type=str)
     parser.add_argument('--outputDir', default=None, help='Destination directory', type=str)
-    parser.add_argument('--isHurricane', default=False, help='Hurricane run flag', type=bool)
+    parser.add_argument('--isHurricane', default="False", help='Hurricane run flag', type=str)
     args = parser.parse_args()
 
     sys.exit(main(args))
