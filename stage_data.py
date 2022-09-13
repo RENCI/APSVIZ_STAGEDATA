@@ -170,7 +170,7 @@ def main(args):
         return 1
 
     if not args.isHurricane:
-        logger.info("Need isHurricane flag on command line: --isHurricane <True/False>.")
+        logger.info("Need isHurricane flag on command line: --isHurricane <Stormname/None>.")
         return 1
 
     try:
