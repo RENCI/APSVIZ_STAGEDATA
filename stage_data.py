@@ -11,6 +11,7 @@ from requests import get
 from urllib.error import HTTPError
 from common.logging import LoggingUtil
 from urllib import parse
+from datetime import datetime, timezone
 
 filelist={'zeta_max':    'maxele.63.nc', 
           'swan_HS_max': 'swan_HS_max.63.nc',
@@ -70,9 +71,13 @@ def organizeNhcZips(shape_dir, out_file, logger):
     return
 
 
-def retrieveStormShapefiles(outputDir, storm_name, logger):
-    logger.info(f"retrieveStormShapefiles: outputDir={outputDir}  stormname={storm_name}")
-    shp_srch_str = f"[shp] - Hurricane {storm_name.lower().capitalize()}"
+def retrieveStormShapefiles(outputDir, storm_number, logger):
+    logger.info(f"retrieveStormShapefiles: outputDir={outputDir}  storm_number={storm_number}")
+
+    # get current year in UTC - needed to build search string for RSS feed titles
+    now = datetime.now(timezone.utc)
+    #shp_srch_str = f"[shp] - Hurricane {stormname.lower().capitalize()}"
+    shp_srch_array = ["[shp] -", f"/AL{storm_number}{now.year}"]
     cone_srch_str = "Cone of Uncertainty"
     shape_dir = f"{outputDir}/shapefiles"
 
@@ -115,7 +120,8 @@ def retrieveStormShapefiles(outputDir, storm_name, logger):
         # if they are not found - that most like like means there in no active tropical storm
         # example title: <title>Advisory #027 Forecast [shp] - Hurricane Earl (AT1/AL062022)</title>
         # example description: <description>Forecast Track, Cone of Uncertainty, Watches/Warnings. Shapefile last updated Fri, 09 Sep 2022 14:37:42 GMT</description>
-        if ((shp_srch_str in item.title) and (cone_srch_str in item.description)):
+        #if ((shp_srch_str in item.title) and (cone_srch_str in item.description)):
+        if ((all(x in item.title for x in shp_srch_array)) and (cone_srch_str in item.description)):
             # now get the download url for these shapefiles and organize in output dir
             download_url = item.link
             logger.info(f"Found download link for shapefiles: {download_url}")
@@ -170,7 +176,7 @@ def main(args):
         return 1
 
     if not args.isHurricane:
-        logger.info("Need isHurricane flag on command line: --isHurricane <Stormname/None>.")
+        logger.info("Need isHurricane flag on command line: --isHurricane <Stormnumber/NA>.")
         return 1
 
     try:
@@ -183,9 +189,9 @@ def main(args):
     logger.info('OutputDir is {}'.format(args.outputDir))
 
     # if this is a tropical storm, stage storm track layers for subsequent storage in GeoServer
-    storm_name = args.isHurricane
-    if ("None" not in storm_name):
-        retrieveStormShapefiles(args.outputDir, storm_name, logger)
+    storm_number = args.isHurricane
+    if (storm_number != "NA"):
+        retrieveStormShapefiles(args.outputDir, storm_number, logger)
 
     error = False
     num = 0
