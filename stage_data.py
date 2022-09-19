@@ -42,6 +42,16 @@ def getDataFile(outdir, url, infilename, logger):
 
     return ret_val
 
+def updateProjFile(filename, logger):
+    prj_str = 'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137,298.257223563]],PRIMEM["Greenwich",0],UNIT["Degree",0.017453292519943295]]'
+
+    if filename is not None:
+        try:
+            with open(filename, "w") as f:
+                f.write(prj_str)
+        except Exception as e:
+            logger.warning(f"WARNING: Unable to update shapefile prj file for: {filename}")
+
 # unzip the NHC shapefiles and organize into a zip for each layer
 def organizeNhcZips(shape_dir, out_file, logger):
     # unzip the NHC shapefile zip
@@ -56,6 +66,10 @@ def organizeNhcZips(shape_dir, out_file, logger):
     for key in NHC_filelist:
         # get list of files for this pattern
         file_list = glob.glob(f"{shape_dir}/*{key}*")
+
+        # modify the .prj file with better projection info
+        proj_file = f'{file_list[0].split(".")[0]}.prj'
+        updateProjFile(proj_file)
 
         # set full path name for zipfile we are about to create
         full_path = f"{os.path.join(shape_dir, NHC_filelist[key])}.zip"
@@ -108,7 +122,7 @@ def retrieveStormShapefiles(outputDir, storm_number, logger):
     try:
         parser = Parser(xml=xml.content)
         feed = parser.parse()
-    except Exception(e):
+    except Exception as e:
         logger.error(f"Cannot parse NHC RSS Feed: {e}")
         # just give up on this and return
         return
