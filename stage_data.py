@@ -75,7 +75,7 @@ def organizeNhcZips(shape_dir, out_file, logger):
         # modify the .prj file with better projection info
         proj_file = f'{file_list[0].split(".")[0]}.prj'
         logger.info(f"proj_file={proj_file}")
-        updateProjFile(proj_file)
+        updateProjFile(proj_file, logger)
 
         # set full path name for zipfile we are about to create
         full_path = f"{os.path.join(shape_dir, NHC_filelist[key])}.zip"
