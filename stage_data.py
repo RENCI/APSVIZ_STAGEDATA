@@ -64,7 +64,7 @@ def organizeNhcZips(shape_dir, out_file, logger):
         # add each file to the zip archive
         for specific_name in file_list:
             logger.debug(f"adding file {specific_name} to zipfile: {full_path}")
-            zipObj.write(specific_name)
+            zipObj.write(specific_name, os.path.basename(specific_name))
 
         zipObj.close()
 
