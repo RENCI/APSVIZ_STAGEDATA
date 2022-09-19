@@ -45,6 +45,7 @@ def getDataFile(outdir, url, infilename, logger):
 def updateProjFile(filename, logger):
     prj_str = 'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137,298.257223563]],PRIMEM["Greenwich",0],UNIT["Degree",0.017453292519943295]]'
 
+    logger.info(f"updateProjFile: filename={filename}")
     if filename is not None:
         try:
             with open(filename, "w") as f:
@@ -54,9 +55,12 @@ def updateProjFile(filename, logger):
 
 # unzip the NHC shapefiles and organize into a zip for each layer
 def organizeNhcZips(shape_dir, out_file, logger):
+    logger.info(f"organizeNhcZips: shape_dir={shape_dir}  out_file={out_file}")
     # unzip the NHC shapefile zip
     with zipfile.ZipFile(os.path.join(shape_dir, out_file), 'r') as zip_ref:
         zip_ref.extractall(shape_dir)
+
+    logger.info(f"Extracted NHC zipfile into {shape_dir}")
 
     # now - first remove the original zipfile
     os.remove(os.path.join(shape_dir, out_file))
@@ -66,9 +70,11 @@ def organizeNhcZips(shape_dir, out_file, logger):
     for key in NHC_filelist:
         # get list of files for this pattern
         file_list = glob.glob(f"{shape_dir}/*{key}*")
+        logger.info(f"file_list: {file_list}")
 
         # modify the .prj file with better projection info
         proj_file = f'{file_list[0].split(".")[0]}.prj'
+        logger.info(f"proj_file={proj_file}")
         updateProjFile(proj_file)
 
         # set full path name for zipfile we are about to create
