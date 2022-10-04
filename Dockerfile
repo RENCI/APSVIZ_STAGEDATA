@@ -32,4 +32,7 @@ COPY ./*.py ./
 ##########
 # at this point the container is ready to accept the launch command.
 # see stagedata_job.yaml for the job that launches this container.
+# example command lines:
+# python stage_data.py --inputURL http://tds.renci.org:80/thredds/fileServer/2022/al09/23/hsofs/hatteras.renci.org/hsofs-al09-bob/nhcOfcl --isHurricane 09 --outputDir /data/4278-23-nhcOfcl/input/
+# python finalize_data.py --inputDir /data/4278-23-nhcOfcl/final --outputDir /data/final --tarMeta 4278-23-nhcOfcl
 ##########
