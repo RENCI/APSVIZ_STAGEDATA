@@ -1,22 +1,20 @@
 #!/usr/bin/env python
 
-import os, sys, wget
+import os
+import sys
+import wget
 
 import logging
-import netCDF4 as nc
+import netCDF4 as nCDF
 import zipfile
 import glob
 from rss_parser import Parser
 from requests import get
-from urllib.error import HTTPError
 from common.logging import LoggingUtil
 from urllib import parse
 from datetime import datetime, timezone
 
-filelist={'zeta_max':    'maxele.63.nc', 
-          'swan_HS_max': 'swan_HS_max.63.nc',
-          'wind_max':    'maxwvel.63.nc', 
-          'water_levels': 'fort.63.nc'}
+filelist = {'zeta_max': 'maxele.63.nc', 'swan_HS_max': 'swan_HS_max.63.nc', 'wind_max': 'maxwvel.63.nc', 'water_levels': 'fort.63.nc'}
 mode = 0o755
 
 NHC_Url = "https://www.nhc.noaa.gov/gis-at.xml"
@@ -24,9 +22,8 @@ NHC_filelist = {'_pgn.': 'cone',
                 '_pts.': 'points',
                 '_lin.': 'track'}
 
+
 def getDataFile(outdir, url, infilename, logger):
-    '''
-    '''
     logger.debug(f"getDataFile: args: outdir={outdir}  url={url}  infilename={infilename}")
     # init return value
     ret_val = None
@@ -42,6 +39,7 @@ def getDataFile(outdir, url, infilename, logger):
 
     return ret_val
 
+
 def updateProjFile(filename, logger):
     prj_str = 'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137,298.257223563]],PRIMEM["Greenwich",0],UNIT["Degree",0.017453292519943295]]'
 
@@ -53,9 +51,10 @@ def updateProjFile(filename, logger):
         except Exception as e:
             logger.warning(f"WARNING: Unable to update shapefile prj file for: {filename}")
 
-# unzip the NHC shapefiles and organize into a zip for each layer
+
 def organizeNhcZips(shape_dir, out_file, logger):
-    logger.info(f"organizeNhcZips: shape_dir={shape_dir}  out_file={out_file}")
+    # unzip the NHC shapefiles and organize into a zip for each layer
+    # logger.info(f"organizeNhcZips: shape_dir={shape_dir}  out_file={out_file}")
     # unzip the NHC shapefile zip
     with zipfile.ZipFile(os.path.join(shape_dir, out_file), 'r') as zip_ref:
         zip_ref.extractall(shape_dir)
@@ -96,7 +95,7 @@ def retrieveStormShapefiles(outputDir, storm_number, logger):
 
     # get current year in UTC - needed to build search string for RSS feed titles
     now = datetime.now(timezone.utc)
-    #shp_srch_str = f"[shp] - Hurricane {stormname.lower().capitalize()}"
+    # shp_srch_str = f"[shp] - Hurricane {stormname.lower().capitalize()}"
     shp_srch_array = ["[shp] -", f"/AL{storm_number}{now.year}"]
     cone_srch_str = "Cone of Uncertainty"
     shape_dir = f"{outputDir}/shapefiles"
@@ -137,10 +136,10 @@ def retrieveStormShapefiles(outputDir, storm_number, logger):
     download_url = None
     for item in feed.feed:
         # look for particular shapefiles that we are interested in
-        # if they are not found - that most like like means there in no active tropical storm
+        # if they are not found - that most like means there in no active tropical storm
         # example title: <title>Advisory #027 Forecast [shp] - Hurricane Earl (AT1/AL062022)</title>
         # example description: <description>Forecast Track, Cone of Uncertainty, Watches/Warnings. Shapefile last updated Fri, 09 Sep 2022 14:37:42 GMT</description>
-        #if ((shp_srch_str in item.title) and (cone_srch_str in item.description)):
+        # if ((shp_srch_str in item.title) and (cone_srch_str in item.description)):
         if ((all(x in item.title for x in shp_srch_array)) and (cone_srch_str in item.description)):
             # now get the download url for these shapefiles and organize in output dir
             download_url = item.link
@@ -150,10 +149,12 @@ def retrieveStormShapefiles(outputDir, storm_number, logger):
     if download_url is not None:
         # now wget the shapefile zip
         # example url: https://www.nhc.noaa.gov/gis/forecast/archive/al062022_5day_027.zip
+        url_parts = parse.urlparse(download_url)
+        path_parts = url_parts[2].rpartition('/')
+        out_file = path_parts[2]
+
         try:
-            url_parts = parse.urlparse(download_url)
-            path_parts = url_parts[2].rpartition('/')
-            out_file = path_parts[2]
+
             ret_val = wget.download(download_url, os.path.join(shape_dir, out_file))
             if ret_val is None:
                 # in this case the download failed
@@ -176,7 +177,7 @@ def main(args):
     # logging.basicConfig(filename='log',format='%(asctime)s : %(levelname)s : %(funcName)s : %(module)s : %(name)s : %(message)s', level=logging.WARNING)
     # get the log level and directory from the environment
     log_level: int = int(os.getenv('LOG_LEVEL', logging.INFO))
-    log_path: str = os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), 'logs'))
+    log_path: str = os.getenv('LOG_PATH', os.path.join(os.path.dirname(__file__), str('logs')))
 
     # create the dir if it does not exist
     if not os.path.exists(log_path):
@@ -210,7 +211,7 @@ def main(args):
 
     # if this is a tropical storm, stage storm track layers for subsequent storage in GeoServer
     storm_number = args.isHurricane
-    if (storm_number != "NA"):
+    if storm_number != "NA":
         retrieveStormShapefiles(args.outputDir, storm_number, logger)
 
     error = False
@@ -227,7 +228,7 @@ def main(args):
             # load the NetCDF file
             try:
                 logger.debug(f"Checking validity of NetCDF file {outname}")
-                f = nc.Dataset(outname)
+                f = nCDF.Dataset(outname)
 
                 # each NetCDF dimension must have a non-zero value
                 for dim in f.dimensions.values():
@@ -259,6 +260,7 @@ def main(args):
             sys.exit(1)
 
     logger.info('Finished moving {} files '.format(num))
+
 
 if __name__ == '__main__':
     from argparse import ArgumentParser
