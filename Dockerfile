@@ -6,7 +6,7 @@
 #       docker tag stagedata:latest renciorg/stagedata:latest
 #       docker push renciorg/stagedata:latest
 ##############
-FROM python:3.9-slim
+FROM python:3.10-slim
 
 # set the logging level
 ENV LOG_LEVEL=10
