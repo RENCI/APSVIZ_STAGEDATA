@@ -99,10 +99,15 @@ def organizeNhcZips(shape_dir, out_file, logger):
 def retrieveStormShapefiles(outputDir, storm_number, logger):
     logger.info(f"retrieveStormShapefiles: outputDir={outputDir}  storm_number={storm_number}")
 
+    # pad storm number if single digit
+    storm_str = str(storm_number)
+    if (len(storm_str) < 2):
+        storm_str = f"0{storm_str}"
+
     # get current year in UTC - needed to build search string for RSS feed titles
     now = datetime.now(timezone.utc)
     # shp_srch_str = f"[shp] - Hurricane {stormname.lower().capitalize()}"
-    shp_srch_array = ["[shp] -", f"/AL{storm_number}{now.year}"]
+    shp_srch_array = ["[shp] -", f"/AL{storm_str}{now.year}"]
     cone_srch_str = "Cone of Uncertainty"
     shape_dir = f"{outputDir}/shapefiles"
 
@@ -216,9 +221,11 @@ def main(args):
     logger.info('OutputDir is {}'.format(args.outputDir))
 
     # if this is a tropical storm, stage storm track layers for subsequent storage in GeoServer
-    storm_number = args.isHurricane
-    if storm_number != "NA":
+    try:
+        storm_number = int(args.isHurricane)
         retrieveStormShapefiles(args.outputDir, storm_number, logger)
+    except ValueError:
+        logger.debug("This is not a storm run")
 
     error = False
     num = 0
