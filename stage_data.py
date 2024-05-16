@@ -259,7 +259,7 @@ def main(args):
         # else the file was not found
         else:
             # swan files are optional
-            if not key.startswith("swan"):
+            if not key.startswith("swan") and not key.startswith("inund"):
                 # log the error
                 logger.error(f'Error: NetCDF file {key} ({filelist[key]}) was not found.')
 
