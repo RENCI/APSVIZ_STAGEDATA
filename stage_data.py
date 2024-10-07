@@ -20,7 +20,8 @@ from common.logging import LoggingUtil
 from urllib import parse
 from datetime import datetime, timezone
 
-filelist = {'zeta_max': 'maxele.63.nc', 'swan_HS_max': 'swan_HS_max.63.nc', 'wind_max': 'maxwvel.63.nc', 'water_levels': 'fort.63.nc', 'inund_max': 'maxinundepth.63.nc'}
+#filelist = {'zeta_max': 'maxele.63.nc', 'swan_HS_max': 'swan_HS_max.63.nc', 'wind_max': 'maxwvel.63.nc', 'water_levels': 'fort.63.nc', 'inund_max': 'maxinundepth.63.nc'}
+filelist = {'zeta_max': 'maxele.63.nc', 'swan_HS_max': 'swan_HS_max.63.nc', 'wind_max': 'maxwvel.63.nc', 'inund_max': 'maxinundepth.63.nc'}
 mode = 0o755
 
 NHC_Url = "https://www.nhc.noaa.gov/gis-at.xml"
@@ -221,11 +222,12 @@ def main(args):
     logger.info('OutputDir is {}'.format(args.outputDir))
 
     # if this is a tropical storm, stage storm track layers for subsequent storage in GeoServer
-    try:
-        storm_number = int(args.isHurricane)
-        retrieveStormShapefiles(args.outputDir, storm_number, logger)
-    except ValueError:
-        logger.debug("This is not a storm run")
+    # no longer using this for now - comment out
+    # try:
+    #     storm_number = int(args.isHurricane)
+    #     retrieveStormShapefiles(args.outputDir, storm_number, logger)
+    # except ValueError:
+    #     logger.debug("This is not a storm run")
 
     error = False
     num = 0
